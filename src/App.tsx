@@ -1,0 +1,1367 @@
+import React, { useState, useEffect } from 'react';
+import { CartProvider } from './context/CartContext';
+import { InventoryProvider } from './context/InventoryContext';
+import { Header } from './components/Header';
+import { Hero } from './components/Hero';
+import { About } from './components/About';
+import { Catalog } from './components/Catalog';
+import { Contact } from './components/Contact';
+import { Footer } from './components/Footer';
+import { Cart } from './components/Cart';
+import { ProductDetail } from './components/ProductDetail';
+import { AdminPanel } from './components/AdminPanel';
+import { ShieldCheck, Activity, Award, ChevronRight, Check, Sparkles } from 'lucide-react';
+import { products, Product } from './data/products';
+import { ProductCard } from './components/ProductCard';
+import { HilosPDOPage } from './components/HilosPDOPage';
+import { SeffilinePage } from './components/SeffilinePage';
+
+
+const App: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<string>('home');
+  const [cartOpen, setCartOpen] = useState<boolean>(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [logoScale, setLogoScale] = useState<number>(0.8);
+
+  // Admin login session states
+  const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
+    return sessionStorage.getItem('latmedical_admin_logged') === 'true';
+  });
+
+  const handleAdminLogin = (loggedIn: boolean) => {
+    setIsAdminLoggedIn(loggedIn);
+    if (loggedIn) {
+      sessionStorage.setItem('latmedical_admin_logged', 'true');
+    } else {
+      sessionStorage.removeItem('latmedical_admin_logged');
+    }
+  };
+
+  // Course form states
+  const [courseName, setCourseName] = useState('');
+  const [courseCountry, setCourseCountry] = useState('');
+  const [coursePhone, setCoursePhone] = useState('');
+  const [courseEmail, setCourseEmail] = useState('');
+  const [coursePolicy, setCoursePolicy] = useState(false);
+  const [courseFormErrors, setCourseFormErrors] = useState<Record<string, string>>({});
+  const [courseFormSubmitted, setCourseFormSubmitted] = useState(false);
+
+  const handleCourseSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const errors: Record<string, string> = {};
+    if (!courseName.trim()) {
+      errors.name = 'El nombre es obligatorio.';
+    }
+    if (!courseCountry.trim()) {
+      errors.country = 'El país es obligatorio.';
+    }
+    if (!coursePhone.trim()) {
+      errors.phone = 'El teléfono es obligatorio.';
+    }
+    if (!courseEmail.trim()) {
+      errors.email = 'El correo electrónico es obligatorio.';
+    } else if (!/\S+@\S+\.\S+/.test(courseEmail)) {
+      errors.email = 'El correo electrónico no es válido.';
+    }
+    if (!coursePolicy) {
+      errors.policy = 'Debes aceptar la política de privacidad y datos.';
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setCourseFormErrors(errors);
+      return;
+    }
+
+    // Success flow
+    setCourseFormErrors({});
+    setCourseFormSubmitted(true);
+    
+    // Clear inputs after showing success message
+    setTimeout(() => {
+      setCourseFormSubmitted(false);
+      setCourseName('');
+      setCourseCountry('');
+      setCoursePhone('');
+      setCourseEmail('');
+      setCoursePolicy(false);
+    }, 4500);
+  };
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const element = document.getElementById('tecnologia-latmedical');
+      if (!element) return;
+      
+      const rect = element.getBoundingClientRect();
+      const windowHeight = window.innerHeight;
+      
+      // Calculate how close the section is to the center of the screen
+      const elementCenter = rect.top + rect.height / 2;
+      const viewportCenter = windowHeight / 2;
+      
+      const distance = Math.abs(elementCenter - viewportCenter);
+      const maxDistance = windowHeight * 0.8;
+      
+      // Map distance to a scale from 0.5 to 1.1
+      const scaleFactor = Math.max(0.5, 1.1 - (distance / maxDistance) * 0.6);
+      setLogoScale(scaleFactor);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll(); // Trigger initial
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  // Hash Router implementation
+  useEffect(() => {
+    const parseHash = () => {
+      const hash = window.location.hash || '#/inicio';
+      if (hash.startsWith('#/producto/')) {
+        const productId = hash.replace('#/producto/', '');
+        const found = products.find(p => p.id === productId);
+        if (found) {
+          setSelectedProduct(found);
+          // Set parent tab to products to keep Header active states consistent
+          setActiveTab('products');
+          return;
+        }
+      }
+      
+      setSelectedProduct(null);
+      switch (hash) {
+        case '#/nosotros':
+          setActiveTab('about');
+          break;
+        case '#/hilos-pdo':
+          setActiveTab('hilos-pdo');
+          break;
+        case '#/seffiline':
+          setActiveTab('seffiline');
+          break;
+        case '#/productos':
+          setActiveTab('products');
+          break;
+        case '#/contacto':
+          setActiveTab('contact');
+          break;
+        case '#/admin':
+          setActiveTab('admin');
+          break;
+        case '#/inicio':
+        default:
+          setActiveTab('home');
+          break;
+      }
+    };
+
+    window.addEventListener('hashchange', parseHash);
+    parseHash(); // Execute on mount to parse initial hash
+
+    return () => window.removeEventListener('hashchange', parseHash);
+  }, []);
+
+  // Dynamic Document Title and Meta tags for SEO July 2026
+  useEffect(() => {
+    let title = 'Latmedical | Hilos PDO V Lift Pro y Medicina Regenerativa Seffiline';
+    let metaDesc = 'Distribuidor oficial exclusivo de Hilos PDO V Lift Pro y kits de medicina regenerativa Seffiline en Argentina. Habilitación ANMAT y cadena estéril.';
+
+    if (selectedProduct) {
+      title = `${selectedProduct.name} | Calibres y Venta Oficial - Latmedical`;
+      metaDesc = `${selectedProduct.shortDesc} Adquiere online con soporte técnico y garantía de trazabilidad ANMAT.`;
+    } else {
+      switch (activeTab) {
+        case 'about':
+          title = 'Nosotros | Medicina de Precisión y Respaldo Europeo - Latmedical';
+          metaDesc = 'Nuestra trayectoria y respaldo en medicina estética y rejuvenecimiento celular. Importaciones oficiales desde Europa en Argentina.';
+          break;
+        case 'hilos-pdo':
+          title = 'Hilos PDO V Lift Pro | Distribuidor Oficial Argentina - Latmedical';
+          metaDesc = 'Catálogo completo de hilos PDO V Lift Pro. Hilos Mono, Premium, Genesis, Cones, Nose, y Biocánulas de alta resistencia con agujas Painless.';
+          break;
+        case 'seffiline':
+          title = 'Terapia Celular Seffiline | Distribuidor Oficial Argentina - Latmedical';
+          metaDesc = 'Explora los kits de microinjerto de tejido adiposo autólogo Seffiline. Soluciones estandarizadas SEFFILLER®, SEFFIHAIR®, SEFFICARE® y SEFFIGYN®.';
+          break;
+        case 'products':
+          title = 'Catálogo de Productos | Hilos PDO y Terapia Autóloga - Latmedical';
+          metaDesc = 'Adquiere online Hilos PDO V Lift Pro y kits de recolección de tejido Seffiline (Seffiller, Seffihair, Sefficare, Seffigyn) con matrícula médica.';
+          break;
+        case 'contact':
+          title = 'Contacto y Asesoramiento Clínico | Latmedical';
+          metaDesc = 'Comunícate con nuestros asesores comerciales para cotizaciones personalizadas de hilos PDO y kits Seffiline en Argentina.';
+          break;
+        case 'admin':
+          title = 'Panel de Control del Inventario - Latmedical';
+          break;
+        case 'home':
+        default:
+          title = 'Latmedical | Hilos PDO V Lift Pro y Medicina Regenerativa Seffiline';
+          metaDesc = 'Distribuidor exclusivo en Argentina. Venta profesional de Hilos PDO V Lift Pro y kits Seffiline para medicina regenerativa con trazabilidad ANMAT.';
+          break;
+      }
+    }
+
+    document.title = title;
+    
+    // Update HTML meta description dynamically for search engine bots
+    let metaDescriptionEl = document.querySelector('meta[name="description"]');
+    if (!metaDescriptionEl) {
+      metaDescriptionEl = document.createElement('meta');
+      metaDescriptionEl.setAttribute('name', 'description');
+      document.head.appendChild(metaDescriptionEl);
+    }
+    metaDescriptionEl.setAttribute('content', metaDesc);
+  }, [activeTab, selectedProduct]);
+
+  const toggleCart = () => setCartOpen(!cartOpen);
+
+  const handleSetActiveTab = (tab: string) => {
+    switch (tab) {
+      case 'about':
+        window.location.hash = '#/nosotros';
+        break;
+      case 'hilos-pdo':
+        window.location.hash = '#/hilos-pdo';
+        break;
+      case 'seffiline':
+        window.location.hash = '#/seffiline';
+        break;
+      case 'products':
+        window.location.hash = '#/productos';
+        break;
+      case 'contact':
+        window.location.hash = '#/contacto';
+        break;
+      case 'admin':
+        window.location.hash = '#/admin';
+        break;
+      case 'home':
+      default:
+        window.location.hash = '#/inicio';
+        break;
+    }
+  };
+
+  const handleViewProduct = (product: Product) => {
+    window.location.hash = `#/producto/${product.id}`;
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Fetch top 3 featured products for the home page preview
+  const featuredProducts = products.filter(p => 
+    p.id === 'vlift-mono' || p.id === 'vlift-genesis' || p.id === 'seffi-filler'
+  );
+
+  // Load total pending orders count directly from localStorage
+  const getOrdersCount = () => {
+    try {
+      const savedOrders = localStorage.getItem('latmedical_orders');
+      if (!savedOrders) return 0;
+      const parsed = JSON.parse(savedOrders);
+      return parsed.filter((o: any) => o.status === 'pending').length;
+    } catch {
+      return 0;
+    }
+  };
+
+  const pendingOrdersCount = getOrdersCount();
+
+  return (
+    <InventoryProvider>
+      <CartProvider>
+        {/* WordPress style top admin bar */}
+        {isAdminLoggedIn && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '32px',
+            background: '#1d2327',
+            color: '#c3c4c7',
+            zIndex: 99999,
+            fontSize: '13px',
+            fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            padding: '0 1rem',
+            boxSizing: 'border-box',
+            borderBottom: '1px solid #2c3338'
+          }} className="wp-admin-bar">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+              <span 
+                onClick={() => handleSetActiveTab('admin')}
+                style={{ fontWeight: 'bold', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }}
+              >
+                <span style={{ fontSize: '15px' }}>🌐</span> Latmedical Console
+              </span>
+              <button 
+                onClick={() => handleSetActiveTab('home')}
+                style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '0.25rem', fontFamily: 'inherit' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#72aee6'}
+                onMouseLeave={e => e.currentTarget.style.color = 'inherit'}
+              >
+                <span>🏠</span> Ver Sitio
+              </button>
+              <button 
+                onClick={() => handleSetActiveTab('admin')}
+                style={{ background: 'none', border: 'none', color: 'inherit', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '0.25rem', fontFamily: 'inherit' }}
+                onMouseEnter={e => e.currentTarget.style.color = '#72aee6'}
+                onMouseLeave={e => e.currentTarget.style.color = 'inherit'}
+              >
+                <span>📦</span> WooCommerce B2B
+                {pendingOrdersCount > 0 && (
+                  <span style={{
+                    background: '#d63638',
+                    color: '#ffffff',
+                    borderRadius: '10px',
+                    padding: '0.05rem 0.35rem',
+                    fontSize: '10px',
+                    fontWeight: 'bold',
+                    marginLeft: '0.3rem'
+                  }}>
+                    {pendingOrdersCount}
+                  </span>
+                )}
+              </button>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+              <span style={{ fontSize: '12px' }}>
+                👤 Hola, <strong>Administrador</strong>
+              </span>
+              <button 
+                onClick={() => handleAdminLogin(false)}
+                style={{ 
+                  background: '#d63638', border: 'none', borderRadius: '3px', color: '#fff', 
+                  cursor: 'pointer', fontSize: '11px', padding: '0.2rem 0.5rem', fontWeight: 'bold',
+                  fontFamily: 'inherit', transition: 'background 0.2s'
+                }}
+                onMouseEnter={e => e.currentTarget.style.background = '#b32124'}
+                onMouseLeave={e => e.currentTarget.style.background = '#d63638'}
+              >
+                Cerrar Sesión
+              </button>
+            </div>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+          {/* Global Navigation Header */}
+          <Header 
+            activeTab={activeTab} 
+            setActiveTab={handleSetActiveTab} 
+            toggleCart={toggleCart} 
+            isAdminLoggedIn={isAdminLoggedIn}
+          />
+
+          {/* Dynamic Main Body Content */}
+          <main style={{ flexGrow: 1, marginTop: isAdminLoggedIn ? '32px' : '0px' }}>
+            {selectedProduct ? (
+              /* Dedicated Product Detail Page */
+              <ProductDetail 
+                product={selectedProduct} 
+                onBack={() => setSelectedProduct(null)} 
+                onViewProduct={handleViewProduct}
+              />
+            ) : (
+              /* Standard Tabs */
+              <>
+                {activeTab === 'hilos-pdo' && (
+                  <div style={{ animation: 'fadeIn 0.5s ease', paddingTop: 'var(--header-height)' }}>
+                    <HilosPDOPage
+                      onContact={() => handleSetActiveTab('contact')}
+                      onBack={() => handleSetActiveTab('products')}
+                      onViewProduct={(productId) => {
+                        const found = products.find(p => p.id === productId);
+                        if (found) {
+                          handleViewProduct(found);
+                        } else {
+                          handleSetActiveTab('contact');
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+
+                {activeTab === 'seffiline' && (
+                  <div style={{ animation: 'fadeIn 0.5s ease' }}>
+                    <SeffilinePage
+                      onContact={() => handleSetActiveTab('contact')}
+                      onBack={() => handleSetActiveTab('products')}
+                      onViewProduct={(productId) => {
+                        const found = products.find(p => p.id === productId);
+                        if (found) {
+                          handleViewProduct(found);
+                        } else {
+                          handleSetActiveTab('contact');
+                        }
+                      }}
+                    />
+                  </div>
+                )}
+
+                {activeTab === 'home' && (
+                  <div style={{ animation: 'fadeIn 0.5s ease' }}>
+                    {/* Hero Slider */}
+                    <Hero setActiveTab={handleSetActiveTab} />
+
+                    {/* Medyglobal inspired 2-column technology section */}
+                    <section 
+                      id="tecnologia-latmedical"
+                      style={{
+                        background: '#03bfd7',
+                        padding: '6rem 0',
+                        overflow: 'hidden',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+                      }}
+                    >
+                      <div className="container">
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr',
+                          gap: '3rem',
+                          alignItems: 'center'
+                        }} className="tecnologia-grid">
+                          
+                          {/* Left Column: Symbol Logo with scroll zoom effect */}
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'center',
+                            alignItems: 'center',
+                            position: 'relative'
+                          }}>
+                            <div style={{
+                              width: '260px',
+                              height: '260px',
+                              borderRadius: '50%',
+                              background: 'rgba(255, 255, 255, 0.15)',
+                              backdropFilter: 'blur(8px)',
+                              border: '2px solid rgba(255, 255, 255, 0.25)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.12)',
+                              transform: `scale(${logoScale})`,
+                              transition: 'transform 0.1s ease-out'
+                            }}>
+                              <img 
+                                src="/logo-symbol.png" 
+                                alt="Latmedical Isotipo" 
+                                style={{
+                                  width: '140px',
+                                  height: 'auto',
+                                  filter: 'drop-shadow(0 8px 16px rgba(0,0,0,0.15))'
+                                }}
+                              />
+                            </div>
+                          </div>
+
+                          {/* Right Column: Heading and 3 Subcards */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'rgba(255,255,255,0.9)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                              2 Líneas de Tratamiento
+                            </span>
+                            <h2 style={{ fontSize: 'clamp(1.6rem, 3.2vw, 2.1rem)', fontWeight: 700, color: '#FFFFFF', lineHeight: 1.3, marginBottom: '2.5rem' }}>
+                              2 LÍNEAS DE PRODUCTOS COMBINADAS PARA EL REJUVENECIMIENTO FACIAL Y CORPORAL
+                            </h2>
+
+                            {/* 3 cards side-by-side inside the right column */}
+                            <div style={{
+                              display: 'grid',
+                              gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))',
+                              gap: '1rem',
+                              width: '100%'
+                            }} className="sub-cards-grid">
+                              
+                              {/* Card 1 */}
+                              <div style={{
+                                background: 'rgba(255, 255, 255, 0.95)',
+                                borderRadius: '16px',
+                                padding: '1.75rem 1rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                textAlign: 'center',
+                                boxShadow: '0 10px 25px rgba(0,0,0,0.06)',
+                                transition: 'transform 0.3s ease'
+                              }} className="treatment-card">
+                                <div style={{ marginBottom: '1rem', height: '40px', display: 'flex', alignItems: 'center' }}>
+                                  <Activity size={32} color="#535b6d" />
+                                </div>
+                                <h4 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#03bfd7', marginBottom: '0.5rem', lineHeight: 1.2 }}>
+                                  HILOS PDO<br/>VLIFT PRO
+                                </h4>
+                                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: '#535b6d', lineHeight: 1.3, flexGrow: 1, margin: '0 0 1rem 0' }}>
+                                  Reposición<br/>de Tejidos
+                                </p>
+                                <button
+                                  onClick={() => handleSetActiveTab('hilos-pdo')}
+                                  className="sub-card-btn"
+                                >
+                                  V Lift Pro
+                                </button>
+                              </div>
+
+                              {/* Card 2 */}
+                              <div style={{
+                                background: 'rgba(255, 255, 255, 0.95)',
+                                borderRadius: '16px',
+                                padding: '1.75rem 1rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                textAlign: 'center',
+                                boxShadow: '0 10px 25px rgba(0,0,0,0.06)',
+                                transition: 'transform 0.3s ease'
+                              }} className="treatment-card">
+                                <div style={{ marginBottom: '1rem', height: '40px', display: 'flex', alignItems: 'center' }}>
+                                  <Sparkles size={32} color="#535b6d" />
+                                </div>
+                                <h4 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#03bfd7', marginBottom: '0.5rem', lineHeight: 1.2 }}>
+                                  TERAPIA CELL<br/>SEFFILINE
+                                </h4>
+                                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: '#535b6d', lineHeight: 1.3, flexGrow: 1, margin: '0 0 1rem 0' }}>
+                                  Estimulación<br/>de Colágeno
+                                </p>
+                                <button
+                                  onClick={() => handleSetActiveTab('seffiline')}
+                                  className="sub-card-btn"
+                                >
+                                  Seffiline
+                                </button>
+                              </div>
+
+                              {/* Card 3 */}
+                              <div style={{
+                                background: 'rgba(255, 255, 255, 0.95)',
+                                borderRadius: '16px',
+                                padding: '1.75rem 1rem',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                textAlign: 'center',
+                                boxShadow: '0 10px 25px rgba(0,0,0,0.06)',
+                                transition: 'transform 0.3s ease'
+                              }} className="treatment-card">
+                                <div style={{ marginBottom: '1rem', height: '40px', display: 'flex', alignItems: 'center' }}>
+                                  <ShieldCheck size={32} color="#535b6d" />
+                                </div>
+                                <h4 style={{ fontSize: '0.82rem', fontWeight: 700, color: '#03bfd7', marginBottom: '0.5rem', lineHeight: 1.2 }}>
+                                  GARANTÍA<br/>ANMAT
+                                </h4>
+                                <p style={{ fontSize: '0.72rem', fontWeight: 600, color: '#535b6d', lineHeight: 1.3, flexGrow: 1, margin: '0 0 1rem 0' }}>
+                                  Trazabilidad<br/>y Seguridad
+                                </p>
+                                <button
+                                  onClick={() => handleSetActiveTab('contact')}
+                                  className="sub-card-btn"
+                                >
+                                  Ver Más
+                                </button>
+                              </div>
+
+                            </div>
+                          </div>
+
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* Medyglobal inspired "¿Qué ofrecemos?" section */}
+                    <section style={{
+                      background: 'var(--bg-white)',
+                      padding: '6rem 0',
+                      borderBottom: '1px solid var(--border-light)'
+                    }}>
+                      <div className="container">
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr',
+                          gap: '4rem',
+                          alignItems: 'center'
+                        }} className="checklist-grid">
+                          {/* Left side checklist */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                            <span className="badge badge-accent-green" style={{ alignSelf: 'flex-start' }}>¿Qué Ofrecemos?</span>
+                            <h2 style={{ fontSize: 'clamp(2rem, 3.5vw, 2.5rem)', fontWeight: 700, lineHeight: 1.2 }}>
+                              Soluciones Clínicas No Quirúrgicas para tu Consultorio
+                            </h2>
+                            <p style={{ color: 'var(--text-medium)', fontSize: '0.95rem', marginBottom: '1rem' }}>
+                              Brindamos a los especialistas las herramientas más seguras y avanzadas para tratamientos estéticos faciales y corporales de alto rendimiento:
+                            </p>
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                              {/* Item 1 */}
+                              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                <div style={{
+                                  background: 'var(--accent-green-light)',
+                                  borderRadius: '50%',
+                                  padding: '0.35rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  marginTop: '0.2rem'
+                                }}>
+                                  <Check size={16} color="var(--accent-green)" strokeWidth={3} />
+                                </div>
+                                <div>
+                                  <h4 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '0.25rem' }}>Resultados Naturales</h4>
+                                  <p style={{ color: 'var(--text-medium)', fontSize: '0.88rem' }}>Terapias autólógenas y bioestimulantes que respetan la armonía y anatomía facial original.</p>
+                                </div>
+                              </div>
+
+                              {/* Item 2 */}
+                              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                <div style={{
+                                  background: 'var(--accent-green-light)',
+                                  borderRadius: '50%',
+                                  padding: '0.35rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  marginTop: '0.2rem'
+                                }}>
+                                  <Check size={16} color="var(--accent-green)" strokeWidth={3} />
+                                </div>
+                                <div>
+                                  <h4 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '0.25rem' }}>Procedimientos Ambulatorios</h4>
+                                  <p style={{ color: 'var(--text-medium)', fontSize: '0.88rem' }}>Técnicas mínimamente invasivas realizadas en cabina, con anestesia local y rápida recuperación.</p>
+                                </div>
+                              </div>
+
+                              {/* Item 3 */}
+                              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                <div style={{
+                                  background: 'var(--accent-green-light)',
+                                  borderRadius: '50%',
+                                  padding: '0.35rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  marginTop: '0.2rem'
+                                }}>
+                                  <Check size={16} color="var(--accent-green)" strokeWidth={3} />
+                                </div>
+                                <div>
+                                  <h4 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '0.25rem' }}>Materiales Biocompatibles</h4>
+                                  <p style={{ color: 'var(--text-medium)', fontSize: '0.88rem' }}>Dispositivos médicos reabsorbibles de polidioxanona y kits estériles para injerto autólogo sin riesgo de rechazo.</p>
+                                </div>
+                              </div>
+
+                              {/* Item 4 */}
+                              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start' }}>
+                                <div style={{
+                                  background: 'var(--accent-green-light)',
+                                  borderRadius: '50%',
+                                  padding: '0.35rem',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  marginTop: '0.2rem'
+                                }}>
+                                  <Check size={16} color="var(--accent-green)" strokeWidth={3} />
+                                </div>
+                                <div>
+                                  <h4 style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '0.25rem' }}>Soporte Técnico y Formación</h4>
+                                  <p style={{ color: 'var(--text-medium)', fontSize: '0.88rem' }}>Talleres de capacitación práctica y asesoramiento constante a cargo de especialistas calificados.</p>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Right side Image block */}
+                          <div style={{
+                            position: 'relative',
+                            borderRadius: '20px',
+                            overflow: 'hidden',
+                            boxShadow: 'var(--shadow-lg)',
+                            height: '450px'
+                          }}>
+                            <img
+                              src="/distribucion_medica.png"
+                              alt="Distribución Médica de Europa Latmedical"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover'
+                              }}
+                            />
+                            <div style={{
+                              position: 'absolute',
+                              bottom: '2rem',
+                              left: '2rem',
+                              right: '2rem',
+                              background: 'rgba(255, 255, 255, 0.9)',
+                              backdropFilter: 'blur(8px)',
+                              padding: '1.5rem',
+                              borderRadius: '12px',
+                              boxShadow: 'var(--shadow-md)',
+                              border: '1px solid rgba(255, 255, 255, 0.3)'
+                            }}>
+                              <h5 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--primary-dark)', marginBottom: '0.25rem' }}>
+                                Distribución Oficial Exclusiva
+                              </h5>
+                              <p style={{ color: 'var(--text-medium)', fontSize: '0.8rem', margin: 0 }}>
+                                Importaciones directas de Europa con certificación ANMAT y estricto control de temperatura y cadena de custodia.
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* Hilos V Lift PRO CONES Video Section */}
+                    <section 
+                      id="vlift-cones-video-section"
+                      style={{
+                        position: 'relative',
+                        height: '550px',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: '#ffffff',
+                        textAlign: 'center',
+                      }}
+                    >
+                      {/* Looping background video */}
+                      <video
+                        autoPlay
+                        loop
+                        muted
+                        playsInline
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          zIndex: 0
+                        }}
+                      >
+                        <source src="/vlift-cones-video.mp4" type="video/mp4" />
+                        Your browser does not support the video tag.
+                      </video>
+
+                      {/* Diagonal scanline texture overlay */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          backgroundImage: 'url("/vlift-texture.png")',
+                          backgroundRepeat: 'repeat',
+                          zIndex: 1,
+                        }}
+                      />
+
+                      {/* Dark overlay mask to increase text legibility */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          background: 'linear-gradient(rgba(17, 24, 39, 0.45) 0%, rgba(17, 24, 39, 0.65) 100%)',
+                          zIndex: 2,
+                        }}
+                      />
+
+                      {/* Content Container */}
+                      <div 
+                        className="container"
+                        style={{
+                          position: 'relative',
+                          zIndex: 3,
+                          maxWidth: '800px',
+                          padding: '0 1.5rem',
+                        }}
+                      >
+                        <p style={{
+                          fontFamily: "'Montserrat', 'Helvetica', 'Arial', sans-serif",
+                          fontSize: 'clamp(1rem, 2vw, 1.3rem)',
+                          fontWeight: 500,
+                          letterSpacing: '0.05em',
+                          marginBottom: '0.75rem',
+                          textShadow: '0 2px 10px rgba(0,0,0,0.5)'
+                        }}>
+                          Descubre los nuevos Hilos V Lift PRO
+                        </p>
+                        
+                        <h2 style={{
+                          fontFamily: "'Montserrat', 'Helvetica', 'Arial', sans-serif",
+                          fontSize: 'clamp(3.5rem, 8vw, 6rem)',
+                          fontWeight: 900,
+                          color: '#ed6f81',
+                          letterSpacing: '0.15em',
+                          lineHeight: 1.1,
+                          margin: '0.5rem 0 1.5rem 0',
+                          textShadow: '0 4px 20px rgba(0,0,0,0.3)',
+                          display: 'inline-block',
+                          animation: 'pulse 3s infinite alternate'
+                        }}>
+                          CONES
+                        </h2>
+                        
+                        <p style={{
+                          fontFamily: "'Montserrat', 'Helvetica', 'Arial', sans-serif",
+                          fontSize: 'clamp(1rem, 2vw, 1.25rem)',
+                          fontWeight: 500,
+                          lineHeight: 1.6,
+                          marginBottom: '2rem',
+                          textShadow: '0 2px 8px rgba(0,0,0,0.6)'
+                        }}>
+                          Espículas en forma de conos bidireccionales.<br />
+                          <span style={{ fontWeight: 700 }}>Mayor tracción. Mayor fuerza.</span>
+                        </p>
+                        
+                        <div>
+                          <button
+                            onClick={() => {
+                              handleSetActiveTab('hilos-pdo');
+                              setTimeout(() => {
+                                const el = document.getElementById('cones');
+                                if (el) {
+                                  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                }
+                              }, 150);
+                            }}
+                            className="btn-primary"
+                            style={{
+                              background: '#ed6f81',
+                              borderColor: '#ed6f81',
+                              color: '#ffffff',
+                              padding: '0.85rem 2.2rem',
+                              fontSize: '0.88rem',
+                              fontWeight: 700,
+                              letterSpacing: '0.08em',
+                              textTransform: 'uppercase',
+                              boxShadow: '0 10px 20px rgba(237, 111, 129, 0.3)',
+                              transition: 'all 0.3s ease'
+                            }}
+                            onMouseOver={e => {
+                              e.currentTarget.style.background = '#ffffff';
+                              e.currentTarget.style.color = '#ed6f81';
+                              e.currentTarget.style.boxShadow = '0 10px 25px rgba(255, 255, 255, 0.4)';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                            }}
+                            onMouseOut={e => {
+                              e.currentTarget.style.background = '#ed6f81';
+                              e.currentTarget.style.color = '#ffffff';
+                              e.currentTarget.style.boxShadow = '0 10px 20px rgba(237, 111, 129, 0.3)';
+                              e.currentTarget.style.transform = 'translateY(0)';
+                            }}
+                          >
+                            Más información
+                          </button>
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* Curated Catalog Preview */}
+                    <section style={{ padding: '6rem 0', background: 'var(--bg-light)' }}>
+                      <div className="container">
+                        <div style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'flex-end',
+                          marginBottom: '3rem',
+                          flexWrap: 'wrap',
+                          gap: '1rem'
+                        }}>
+                          <div>
+                            <span className="badge badge-accent-green" style={{ marginBottom: '0.75rem' }}>Destacados del Catálogo</span>
+                            <h2 style={{ fontSize: '2rem', fontWeight: 700, margin: 0 }}>Productos Más Vendidos</h2>
+                          </div>
+                          <button
+                            onClick={() => handleSetActiveTab('products')}
+                            className="btn-primary"
+                            style={{ fontSize: '0.85rem' }}
+                          >
+                            Ver Catálogo Completo <ChevronRight size={16} />
+                          </button>
+                        </div>
+
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: 'repeat(auto-fill, minmax(285px, 1fr))',
+                          gap: '2rem'
+                        }}>
+                          {featuredProducts.map(product => (
+                            <ProductCard 
+                              key={product.id} 
+                              product={product} 
+                              onViewDetails={handleViewProduct} 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    </section>
+
+                    {/* B2B Credential Notice Banner */}
+                    <section style={{
+                      background: 'var(--primary-dark)',
+                      color: 'var(--text-white)',
+                      padding: '5rem 0',
+                      position: 'relative',
+                      overflow: 'hidden'
+                    }}>
+                      <div className="container" style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        textAlign: 'center',
+                        position: 'relative',
+                        zIndex: 2,
+                        maxWidth: '800px'
+                      }}>
+                        <Award size={36} color="var(--accent-green)" style={{ marginBottom: '1.5rem' }} />
+                        <h2 style={{ color: 'var(--text-white)', fontSize: '1.8rem', fontWeight: 700, marginBottom: '1rem' }}>
+                          ¿Eres profesional médico matriculado?
+                        </h2>
+                        <p style={{ color: 'rgba(255,255,255,0.7)', marginBottom: '2rem', fontSize: '0.95rem' }}>
+                          Ingresa tus credenciales y obtén precios de distribuidor con despacho inmediato. Habilitación ANMAT y cadena estéril asegurada.
+                        </p>
+                        <button
+                          onClick={() => handleSetActiveTab('products')}
+                          className="btn-primary"
+                          style={{ padding: '0.8rem 2.5rem' }}
+                        >
+                          Comprar Productos
+                        </button>
+                      </div>
+                    </section>
+
+                    {/* Apúntate a nuestros cursos Form Section */}
+                    <section
+                      id="cursos-form-section"
+                      style={{
+                        position: 'relative',
+                        padding: '6.5rem 0',
+                        backgroundImage: 'url("/fondo-cursos.jpg")',
+                        backgroundSize: 'cover',
+                        backgroundPosition: 'center',
+                        backgroundAttachment: 'scroll',
+                        color: '#ffffff',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {/* Teal-emerald overlay gradient to match the screenshot and site aesthetic */}
+                      <div
+                        style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          background: 'linear-gradient(135deg, rgba(3, 191, 215, 0.88) 0%, rgba(41, 192, 147, 0.88) 100%)',
+                          zIndex: 1
+                        }}
+                      />
+
+                      <div 
+                        className="container"
+                        style={{
+                          position: 'relative',
+                          zIndex: 2,
+                          maxWidth: '650px',
+                          textAlign: 'center',
+                          padding: '0 1.5rem',
+                          margin: '0 auto'
+                        }}
+                      >
+                        <h2 style={{
+                          fontSize: 'clamp(2rem, 4vw, 2.5rem)',
+                          fontWeight: 700,
+                          marginBottom: '0.75rem',
+                          fontFamily: "'Montserrat', sans-serif",
+                          color: '#ffffff'
+                        }}>
+                          Apúntate a nuestros cursos
+                        </h2>
+                        
+                        <p style={{
+                          fontSize: 'clamp(0.95rem, 1.8vw, 1.15rem)',
+                          fontWeight: 400,
+                          opacity: 0.95,
+                          marginBottom: '3rem',
+                          lineHeight: 1.5
+                        }}>
+                          Plan de formación, déjanos tu correo y haz click para más info.
+                        </p>
+
+                        {/* Glassmorphic Form Container */}
+                        <form 
+                          onSubmit={handleCourseSubmit}
+                          noValidate
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.12)',
+                            backdropFilter: 'blur(12px)',
+                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            borderRadius: '24px',
+                            padding: '2.5rem 2rem',
+                            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.15)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '1.25rem',
+                            textAlign: 'left'
+                          }}
+                        >
+                          {/* Name Input */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <label htmlFor="courseName" style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.9 }}>
+                              Nombre Completo *
+                            </label>
+                            <input
+                              type="text"
+                              id="courseName"
+                              placeholder="Tu nombre completo"
+                              value={courseName}
+                              onChange={e => {
+                                setCourseName(e.target.value);
+                                if (courseFormErrors.name) {
+                                  setCourseFormErrors(prev => ({ ...prev, name: '' }));
+                                }
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.85rem 1.25rem',
+                                borderRadius: '10px',
+                                border: `1.5px solid ${courseFormErrors.name ? '#ff6b6b' : 'rgba(255, 255, 255, 0.25)'}`,
+                                background: 'rgba(255, 255, 255, 0.08)',
+                                color: '#ffffff',
+                                fontSize: '0.9rem',
+                                fontFamily: 'inherit',
+                                outline: 'none',
+                                transition: 'all 0.3s ease',
+                              }}
+                              className="course-input"
+                            />
+                            {courseFormErrors.name && (
+                              <span style={{ fontSize: '0.75rem', color: '#ff8b8b', fontWeight: 600 }}>
+                                {courseFormErrors.name}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Country Input */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <label htmlFor="courseCountry" style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.9 }}>
+                              País *
+                            </label>
+                            <input
+                              type="text"
+                              id="courseCountry"
+                              placeholder="País de residencia"
+                              value={courseCountry}
+                              onChange={e => {
+                                setCourseCountry(e.target.value);
+                                if (courseFormErrors.country) {
+                                  setCourseFormErrors(prev => ({ ...prev, country: '' }));
+                                }
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.85rem 1.25rem',
+                                borderRadius: '10px',
+                                border: `1.5px solid ${courseFormErrors.country ? '#ff6b6b' : 'rgba(255, 255, 255, 0.25)'}`,
+                                background: 'rgba(255, 255, 255, 0.08)',
+                                color: '#ffffff',
+                                fontSize: '0.9rem',
+                                fontFamily: 'inherit',
+                                outline: 'none',
+                                transition: 'all 0.3s ease',
+                              }}
+                              className="course-input"
+                            />
+                            {courseFormErrors.country && (
+                              <span style={{ fontSize: '0.75rem', color: '#ff8b8b', fontWeight: 600 }}>
+                                {courseFormErrors.country}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Phone Input */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <label htmlFor="coursePhone" style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.9 }}>
+                              Teléfono *
+                            </label>
+                            <input
+                              type="tel"
+                              id="coursePhone"
+                              placeholder="Ej: +54 9 11 1234 5678"
+                              value={coursePhone}
+                              onChange={e => {
+                                setCoursePhone(e.target.value);
+                                if (courseFormErrors.phone) {
+                                  setCourseFormErrors(prev => ({ ...prev, phone: '' }));
+                                }
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.85rem 1.25rem',
+                                borderRadius: '10px',
+                                border: `1.5px solid ${courseFormErrors.phone ? '#ff6b6b' : 'rgba(255, 255, 255, 0.25)'}`,
+                                background: 'rgba(255, 255, 255, 0.08)',
+                                color: '#ffffff',
+                                fontSize: '0.9rem',
+                                fontFamily: 'inherit',
+                                outline: 'none',
+                                transition: 'all 0.3s ease',
+                              }}
+                              className="course-input"
+                            />
+                            {courseFormErrors.phone && (
+                              <span style={{ fontSize: '0.75rem', color: '#ff8b8b', fontWeight: 600 }}>
+                                {courseFormErrors.phone}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Email Input */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            <label htmlFor="courseEmail" style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.9 }}>
+                              Correo Electrónico *
+                            </label>
+                            <input
+                              type="email"
+                              id="courseEmail"
+                              placeholder="nombre@ejemplo.com"
+                              value={courseEmail}
+                              onChange={e => {
+                                setCourseEmail(e.target.value);
+                                if (courseFormErrors.email) {
+                                  setCourseFormErrors(prev => ({ ...prev, email: '' }));
+                                }
+                              }}
+                              style={{
+                                width: '100%',
+                                padding: '0.85rem 1.25rem',
+                                borderRadius: '10px',
+                                border: `1.5px solid ${courseFormErrors.email ? '#ff6b6b' : 'rgba(255, 255, 255, 0.25)'}`,
+                                background: 'rgba(255, 255, 255, 0.08)',
+                                color: '#ffffff',
+                                fontSize: '0.9rem',
+                                fontFamily: 'inherit',
+                                outline: 'none',
+                                transition: 'all 0.3s ease',
+                              }}
+                              className="course-input"
+                            />
+                            {courseFormErrors.email && (
+                              <span style={{ fontSize: '0.75rem', color: '#ff8b8b', fontWeight: 600 }}>
+                                {courseFormErrors.email}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Policy Checkbox */}
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', marginTop: '0.5rem' }}>
+                            <label 
+                              style={{ 
+                                display: 'flex', 
+                                alignItems: 'center', 
+                                gap: '0.65rem', 
+                                fontSize: '0.82rem', 
+                                cursor: 'pointer',
+                                userSelect: 'none'
+                              }}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={coursePolicy}
+                                onChange={e => {
+                                  setCoursePolicy(e.target.checked);
+                                  if (courseFormErrors.policy) {
+                                    setCourseFormErrors(prev => ({ ...prev, policy: '' }));
+                                  }
+                                }}
+                                style={{
+                                  width: '18px',
+                                  height: '18px',
+                                  cursor: 'pointer',
+                                  accentColor: '#03bfd7',
+                                }}
+                              />
+                              <span>Acepto la política de privacidad y datos.</span>
+                            </label>
+                            {courseFormErrors.policy && (
+                              <span style={{ fontSize: '0.75rem', color: '#ff8b8b', fontWeight: 600, marginLeft: '1.75rem' }}>
+                                {courseFormErrors.policy}
+                              </span>
+                            )}
+                          </div>
+
+                          {/* Submit Button */}
+                          <button
+                            type="submit"
+                            style={{
+                              background: '#EC6255',
+                              color: '#ffffff',
+                              border: 'none',
+                              borderRadius: '30px',
+                              padding: '1rem',
+                              fontSize: '0.95rem',
+                              fontWeight: 700,
+                              letterSpacing: '0.08em',
+                              textTransform: 'uppercase',
+                              cursor: 'pointer',
+                              marginTop: '1rem',
+                              boxShadow: '0 10px 20px rgba(236, 98, 85, 0.3)',
+                              transition: 'all 0.3s ease'
+                            }}
+                            onMouseOver={e => {
+                              e.currentTarget.style.background = '#e55345';
+                              e.currentTarget.style.boxShadow = '0 10px 25px rgba(229, 83, 69, 0.45)';
+                              e.currentTarget.style.transform = 'translateY(-2px)';
+                            }}
+                            onMouseOut={e => {
+                              e.currentTarget.style.background = '#EC6255';
+                              e.currentTarget.style.boxShadow = '0 10px 20px rgba(236, 98, 85, 0.3)';
+                              e.currentTarget.style.transform = 'translateY(0)';
+                            }}
+                          >
+                            ENVIAR
+                          </button>
+                        </form>
+                      </div>
+                    </section>
+                  </div>
+                )}
+
+                {activeTab === 'about' && <About />}
+                {activeTab === 'products' && (
+                  <Catalog onViewDetails={handleViewProduct} />
+                )}
+                {activeTab === 'contact' && <Contact />}
+                 {activeTab === 'admin' && (
+                   <AdminPanel 
+                     isAdminLoggedIn={isAdminLoggedIn} 
+                     onAdminLoginChange={handleAdminLogin} 
+                   />
+                 )}
+              </>
+            )}
+          </main>
+
+          {/* Global Footer */}
+          <Footer setActiveTab={handleSetActiveTab} />
+
+          {/* Sliding Cart Drawer overlay */}
+          <Cart isOpen={cartOpen} toggleCart={toggleCart} />
+
+          {/* Course Submission Success Dialog */}
+          {courseFormSubmitted && (
+            <div style={{
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              width: '100%',
+              height: '100%',
+              background: 'rgba(0, 0, 0, 0.6)',
+              backdropFilter: 'blur(8px)',
+              zIndex: 99999,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              animation: 'fadeIn 0.3s ease'
+            }}>
+              <div style={{
+                background: '#ffffff',
+                color: '#1a1a1a',
+                padding: '3rem 2rem',
+                borderRadius: '24px',
+                maxWidth: '450px',
+                width: '90%',
+                textAlign: 'center',
+                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.3)',
+                border: '1px solid rgba(255,255,255,0.8)',
+                animation: 'scaleUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              }}>
+                <div style={{
+                  width: '80px',
+                  height: '80px',
+                  borderRadius: '50%',
+                  background: '#29c093',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  margin: '0 auto 1.5rem',
+                  boxShadow: '0 8px 20px rgba(41, 192, 147, 0.3)'
+                }}>
+                  <Check size={40} color="#ffffff" strokeWidth={3} />
+                </div>
+                <h3 style={{
+                  fontSize: '1.6rem',
+                  fontWeight: 700,
+                  marginBottom: '1rem',
+                  color: '#111827'
+                }}>
+                  ¡Inscripción Exitosa!
+                </h3>
+                <p style={{
+                  fontSize: '0.92rem',
+                  lineHeight: 1.6,
+                  color: '#4b5563',
+                  marginBottom: '1.5rem'
+                }}>
+                  Gracias por tu interés, <strong style={{ color: '#03bfd7' }}>{courseName}</strong>. Hemos recibido tu solicitud desde <strong>{courseCountry}</strong>.
+                </p>
+                <p style={{
+                  fontSize: '0.85rem',
+                  color: '#9ca3af',
+                  margin: 0
+                }}>
+                  Te enviaremos el plan de formación por correo a la brevedad.
+                </p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <style>{`
+          @media (min-width: 992px) {
+            .dual-brands-grid {
+              grid-template-columns: 1fr 1fr !important;
+              gap: 6rem !important;
+            }
+            .checklist-grid {
+              grid-template-columns: 1.2fr 1fr !important;
+              gap: 5rem !important;
+            }
+            .tecnologia-grid {
+              grid-template-columns: 1fr 1.3fr !important;
+              gap: 5rem !important;
+            }
+          }
+          .treatment-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12) !important;
+          }
+          .sub-card-btn {
+            background: #535b6d;
+            color: #ffffff;
+            border: none;
+            border-radius: 4px;
+            padding: 0.45rem 0.8rem;
+            font-size: 0.72rem;
+            font-weight: 600;
+            width: 100%;
+            cursor: pointer;
+            transition: background 0.2s ease;
+          }
+          .sub-card-btn:hover {
+            background: #03bfd7;
+          }
+        `}</style>
+      </CartProvider>
+    </InventoryProvider>
+  );
+};
+
+export default App;
