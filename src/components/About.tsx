@@ -252,20 +252,23 @@ export const About: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '1.25rem',
                 textDecoration: 'none',
                 color: 'var(--primary-dark)',
                 fontWeight: 700,
                 fontSize: '1.1rem',
                 border: '1px solid var(--border-light)',
-                padding: '0.8rem 1.5rem',
-                borderRadius: '8px',
-                transition: 'var(--transition-fast)'
+                padding: '1.25rem 2.5rem',
+                borderRadius: '16px',
+                transition: 'var(--transition-fast)',
+                background: '#ffffff',
+                boxShadow: 'var(--shadow-sm)'
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-green)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-green)'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              <span>Vlift Pro (Oficial)</span> <ExternalLink size={14} color="var(--text-light)" />
+              <img src="/images/logos/vliftpro-part.png" alt="Vlift Pro" style={{ height: '110px', width: 'auto', display: 'block' }} />
+              <ExternalLink size={16} color="var(--text-light)" />
             </a>
 
             <a 
@@ -275,43 +278,49 @@ export const About: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '1.25rem',
                 textDecoration: 'none',
                 color: 'var(--primary-dark)',
                 fontWeight: 700,
                 fontSize: '1.1rem',
                 border: '1px solid var(--border-light)',
-                padding: '0.8rem 1.5rem',
-                borderRadius: '8px',
-                transition: 'var(--transition-fast)'
+                padding: '1.25rem 2.5rem',
+                borderRadius: '16px',
+                transition: 'var(--transition-fast)',
+                background: '#ffffff',
+                boxShadow: 'var(--shadow-sm)'
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-green)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-green)'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              <span>Marenostrum Devices</span> <ExternalLink size={14} color="var(--text-light)" />
+              <img src="/images/logos/marenosturm-med.png" alt="Marenostrum Devices" style={{ height: '110px', width: 'auto', display: 'block' }} />
+              <ExternalLink size={16} color="var(--text-light)" />
             </a>
 
             <a 
-              href="https://seffiline.com" 
+              href="https://www.instagram.com/seffiline_sp/" 
               target="_blank" 
               rel="noreferrer" 
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.5rem',
+                gap: '1.25rem',
                 textDecoration: 'none',
                 color: 'var(--primary-dark)',
                 fontWeight: 700,
                 fontSize: '1.1rem',
                 border: '1px solid var(--border-light)',
-                padding: '0.8rem 1.5rem',
-                borderRadius: '8px',
-                transition: 'var(--transition-fast)'
+                padding: '1.25rem 2.5rem',
+                borderRadius: '16px',
+                transition: 'var(--transition-fast)',
+                background: '#ffffff',
+                boxShadow: 'var(--shadow-sm)'
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-green)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-green)'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
               onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.transform = 'translateY(0)'; }}
             >
-              <span>Seffiline Terapia</span> <ExternalLink size={14} color="var(--text-light)" />
+              <img src="/images/logos/seffiline_sp.png" alt="Seffiline Terapia" style={{ height: '110px', width: 'auto', display: 'block' }} />
+              <ExternalLink size={16} color="var(--text-light)" />
             </a>
           </div>
         </div>

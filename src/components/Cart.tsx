@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { X, Trash2, Plus, Minus, CreditCard, Landmark, CheckCircle2, ArrowLeft, ExternalLink, Printer } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useInventory, OrderItem } from '../context/InventoryContext';
+import defaultSettings from '../data/general_settings.json';
 
 interface CartProps {
   isOpen: boolean;
@@ -26,7 +27,7 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
     address: '',
     phone: '',
     email: '',
-    paymentMethod: 'transfer', // 'transfer' | 'card'
+    paymentMethod: 'transfer', // 'transfer' | 'card' | 'mercadopago'
     cardName: '',
     cardNumber: '',
     cardExpiry: '',
@@ -142,6 +143,8 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
 
     const paymentText = formData.paymentMethod === 'transfer' 
       ? 'Transferencia Bancaria (Pendiente de acreditación)' 
+      : formData.paymentMethod === 'mercadopago'
+      ? 'Mercado Pago (Online)'
       : 'Tarjeta de Crédito / Débito (Aprobado)';
 
     const text = `*COMPRA CONFIRMADA - LATMEDICAL ARGENTINA*\n\n` +
@@ -159,8 +162,8 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                  `Adjunto los datos profesionales para la facturación y validación del despacho. ¡Muchas gracias!`;
 
     const savedSettings = localStorage.getItem('latmedical_web_settings');
-    const settings = savedSettings ? JSON.parse(savedSettings) : {};
-    const whatsappNumber = settings.whatsappNumber || '5491123456789';
+    const settings = savedSettings ? JSON.parse(savedSettings) : defaultSettings;
+    const whatsappNumber = settings.whatsappNumber || defaultSettings.whatsappNumber;
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -610,9 +613,62 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                     <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-medium)' }}>Visa, MasterCard, AMEX.</span>
                   </div>
                 </label>
+
+                {/* Mercado Pago option */}
+                <label style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.75rem 1rem',
+                  borderRadius: '6px',
+                  border: '1px solid',
+                  borderColor: formData.paymentMethod === 'mercadopago' ? 'var(--accent-green)' : 'var(--border-light)',
+                  background: formData.paymentMethod === 'mercadopago' ? 'var(--accent-green-light)' : 'transparent',
+                  cursor: 'pointer',
+                  fontSize: '0.85rem',
+                  fontWeight: 500
+                }}>
+                  <input
+                    type="radio"
+                    name="paymentMethod"
+                    value="mercadopago"
+                    checked={formData.paymentMethod === 'mercadopago'}
+                    onChange={handleInputChange}
+                    style={{ cursor: 'pointer' }}
+                  />
+                  <img 
+                    src="https://img.icons8.com/color/48/000000/mercado-pago.png" 
+                    alt="Mercado Pago" 
+                    style={{ width: '18px', height: '18px', objectFit: 'contain' }} 
+                  />
+                  <div>
+                    <strong>Mercado Pago</strong>
+                    <span style={{ display: 'block', fontSize: '0.7rem', color: 'var(--text-medium)' }}>Paga con saldo o tarjeta de forma segura.</span>
+                  </div>
+                </label>
               </div>
 
               {/* Conditional Card inputs */}
+              {formData.paymentMethod === 'mercadopago' && (
+                <div style={{
+                  background: '#F0F9FF',
+                  border: '1px solid #B9E6FE',
+                  padding: '1rem',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  animation: 'fadeIn 0.3s ease'
+                }}>
+                  <p style={{ fontSize: '0.8rem', color: '#0369A1', fontWeight: 600, margin: 0 }}>
+                    ⚠️ Integración Mercado Pago (Simulado)
+                  </p>
+                  <p style={{ fontSize: '0.75rem', color: '#0284C7', margin: 0, lineHeight: 1.4 }}>
+                    Al confirmar tu pedido, podrás enviar los detalles de la compra a través de WhatsApp e iniciar el pago. Validaremos tu acreditación antes de liberar el equipamiento.
+                  </p>
+                </div>
+              )}
+
               {formData.paymentMethod === 'card' && (
                 <div style={{
                   background: '#F9FAFB',
@@ -760,7 +816,7 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                   <span style={{ color: 'var(--text-medium)' }}>Método de pago</span>
-                  <span>{formData.paymentMethod === 'transfer' ? 'Transferencia Bancaria' : 'Tarjeta de Crédito'}</span>
+                  <span>{formData.paymentMethod === 'transfer' ? 'Transferencia Bancaria' : formData.paymentMethod === 'mercadopago' ? 'Mercado Pago' : 'Tarjeta de Crédito'}</span>
                 </div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-light)', paddingTop: '0.5rem' }}>
                   <span style={{ color: 'var(--text-medium)' }}>Dirección de despacho</span>
@@ -783,17 +839,34 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                   <p style={{ color: 'var(--text-medium)', marginBottom: '0.5rem' }}>Realice el depósito en la siguiente cuenta corriente de Latmedical:</p>
                   {(() => {
                     const savedSettings = localStorage.getItem('latmedical_web_settings');
-                    const settings = savedSettings ? JSON.parse(savedSettings) : {};
+                    const settings = savedSettings ? JSON.parse(savedSettings) : defaultSettings;
                     return (
                       <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.2rem', fontWeight: 600 }}>
-                        <li>Banco: {settings.bankName || 'Galicia'}</li>
-                        <li>CBU: {settings.bankCbu || '0070123420000012345678'}</li>
-                        <li>Alias: {settings.bankAlias || 'LATMEDICAL.GALICIA'}</li>
-                        <li>Titular: {settings.bankHolder || 'LATMEDICAL S.A.'}</li>
+                        <li>Banco: {settings.bankName || defaultSettings.bankName}</li>
+                        <li>CBU: {settings.bankCbu || defaultSettings.bankCbu}</li>
+                        <li>Alias: {settings.bankAlias || defaultSettings.bankAlias}</li>
+                        <li>Titular: {settings.bankHolder || defaultSettings.bankHolder}</li>
                       </ul>
                     );
                   })()}
                   <p style={{ color: 'var(--text-light)', fontSize: '0.65rem', marginTop: '0.5rem' }}>El despacho se liberará automáticamente al acreditarse la transferencia.</p>
+                </div>
+              )}
+
+              {/* Payment instructions if Mercado Pago */}
+              {formData.paymentMethod === 'mercadopago' && (
+                <div style={{
+                  background: 'rgba(0, 156, 242, 0.05)',
+                  border: '1px solid #009cf2',
+                  borderRadius: '8px',
+                  padding: '1rem',
+                  textAlign: 'left',
+                  fontSize: '0.75rem',
+                  width: '100%'
+                }}>
+                  <h4 style={{ fontWeight: 700, marginBottom: '0.4rem', color: '#007fc5' }}>Pago con Mercado Pago:</h4>
+                  <p style={{ color: 'var(--text-medium)', marginBottom: '0.5rem' }}>Para completar tu pago de forma instantánea mediante Mercado Pago, pulsa el botón de WhatsApp abajo para recibir tu link de pago oficial o escanea los detalles de acreditación.</p>
+                  <p style={{ color: 'var(--text-light)', fontSize: '0.65rem', marginTop: '0.5rem' }}>El despacho quedará reservado temporalmente y se validará al acreditarse tu saldo en nuestra cuenta.</p>
                 </div>
               )}
 

@@ -1,0 +1,22 @@
+[
+  {
+    "id": "sub-1784140314676-85",
+    "date": "15/7/2026, 08:31:54",
+    "type": "Curso Internacional",
+    "name": "Fernando Montilla",
+    "email": "assistant@vlift.org",
+    "phone": "634021915",
+    "country": "Buenos Aires",
+    "message": "Inscripción a curso internacional"
+  },
+  {
+    "id": "sub-1784140361905-20",
+    "date": "15/7/2026, 08:32:41",
+    "type": "Contacto Web",
+    "name": "fernando montilla",
+    "email": "fernando19.asj@gmail.com",
+    "phone": "675471619",
+    "country": "Medico General",
+    "message": "Hoy soy una prueba"
+  }
+]

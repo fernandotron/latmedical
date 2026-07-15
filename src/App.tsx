@@ -23,7 +23,6 @@ const App: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [logoScale, setLogoScale] = useState<number>(0.8);
 
-  // Admin login session states
   const [isAdminLoggedIn, setIsAdminLoggedIn] = useState<boolean>(() => {
     return sessionStorage.getItem('latmedical_admin_logged') === 'true';
   });
@@ -76,6 +75,20 @@ const App: React.FC = () => {
     setCourseFormErrors({});
     setCourseFormSubmitted(true);
     
+    // Save submission locally
+    fetch('/api/save-submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'Curso Internacional',
+        name: courseName.trim(),
+        email: courseEmail.trim(),
+        phone: coursePhone.trim(),
+        country: courseCountry.trim(),
+        message: 'Inscripción a curso internacional'
+      })
+    }).catch(err => console.error('Error saving course registry:', err));
+
     // Clear inputs after showing success message
     setTimeout(() => {
       setCourseFormSubmitted(false);
@@ -112,53 +125,61 @@ const App: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Hash Router implementation
+  // Path Router implementation (Removing the "#" routing)
   useEffect(() => {
-    const parseHash = () => {
-      const hash = window.location.hash || '#/inicio';
-      if (hash.startsWith('#/producto/')) {
-        const productId = hash.replace('#/producto/', '');
+    const parsePath = () => {
+      const path = window.location.pathname || '/inicio';
+      if (path.startsWith('/producto/')) {
+        const productId = path.replace('/producto/', '');
         const found = products.find(p => p.id === productId);
         if (found) {
           setSelectedProduct(found);
-          // Set parent tab to products to keep Header active states consistent
           setActiveTab('products');
           return;
         }
       }
       
       setSelectedProduct(null);
-      switch (hash) {
-        case '#/nosotros':
+      switch (path) {
+        case '/nosotros':
           setActiveTab('about');
           break;
-        case '#/hilos-pdo':
+        case '/hilos-pdo':
           setActiveTab('hilos-pdo');
           break;
-        case '#/seffiline':
+        case '/seffiline':
           setActiveTab('seffiline');
           break;
-        case '#/productos':
+        case '/productos':
           setActiveTab('products');
           break;
-        case '#/contacto':
+        case '/contacto':
           setActiveTab('contact');
           break;
-        case '#/admin':
+        case '/admin':
           setActiveTab('admin');
           break;
-        case '#/inicio':
+        case '/inicio':
         default:
-          setActiveTab('home');
+          if (path === '/' || path === '/index.html') {
+            setActiveTab('home');
+          } else {
+            setActiveTab('home');
+          }
           break;
       }
     };
 
-    window.addEventListener('hashchange', parseHash);
-    parseHash(); // Execute on mount to parse initial hash
+    window.addEventListener('popstate', parsePath);
+    parsePath(); // Execute on mount to parse initial path
 
-    return () => window.removeEventListener('hashchange', parseHash);
+    return () => window.removeEventListener('popstate', parsePath);
   }, []);
+
+  const navigateTo = (path: string) => {
+    window.history.pushState(null, '', path);
+    window.dispatchEvent(new Event('popstate'));
+  };
 
   // Dynamic Document Title and Meta tags for SEO July 2026
   useEffect(() => {
@@ -218,32 +239,32 @@ const App: React.FC = () => {
   const handleSetActiveTab = (tab: string) => {
     switch (tab) {
       case 'about':
-        window.location.hash = '#/nosotros';
+        navigateTo('/nosotros');
         break;
       case 'hilos-pdo':
-        window.location.hash = '#/hilos-pdo';
+        navigateTo('/hilos-pdo');
         break;
       case 'seffiline':
-        window.location.hash = '#/seffiline';
+        navigateTo('/seffiline');
         break;
       case 'products':
-        window.location.hash = '#/productos';
+        navigateTo('/productos');
         break;
       case 'contact':
-        window.location.hash = '#/contacto';
+        navigateTo('/contacto');
         break;
       case 'admin':
-        window.location.hash = '#/admin';
+        navigateTo('/admin');
         break;
       case 'home':
       default:
-        window.location.hash = '#/inicio';
+        navigateTo('/inicio');
         break;
     }
   };
 
   const handleViewProduct = (product: Product) => {
-    window.location.hash = `#/producto/${product.id}`;
+    navigateTo(`/producto/${product.id}`);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -1000,21 +1021,21 @@ const App: React.FC = () => {
                           onSubmit={handleCourseSubmit}
                           noValidate
                           style={{
-                            background: 'rgba(255, 255, 255, 0.12)',
-                            backdropFilter: 'blur(12px)',
-                            border: '1px solid rgba(255, 255, 255, 0.2)',
+                            background: '#ffffff',
                             borderRadius: '24px',
-                            padding: '2.5rem 2rem',
-                            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.15)',
+                            padding: '3rem 2.5rem',
+                            boxShadow: '0 25px 50px -12px rgba(15, 23, 42, 0.15)',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '1.25rem',
-                            textAlign: 'left'
+                            gap: '1.5rem',
+                            textAlign: 'left',
+                            border: '1px solid rgba(226, 232, 240, 0.8)',
+                            color: '#1e293b'
                           }}
                         >
                           {/* Name Input */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            <label htmlFor="courseName" style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.9 }}>
+                            <label htmlFor="courseName" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: '0.1rem' }}>
                               Nombre Completo *
                             </label>
                             <input
@@ -1032,9 +1053,9 @@ const App: React.FC = () => {
                                 width: '100%',
                                 padding: '0.85rem 1.25rem',
                                 borderRadius: '10px',
-                                border: `1.5px solid ${courseFormErrors.name ? '#ff6b6b' : 'rgba(255, 255, 255, 0.25)'}`,
-                                background: 'rgba(255, 255, 255, 0.08)',
-                                color: '#ffffff',
+                                border: `1.5px solid ${courseFormErrors.name ? '#ef4444' : '#cbd5e1'}`,
+                                background: '#f8fafc',
+                                color: '#0f172a',
                                 fontSize: '0.9rem',
                                 fontFamily: 'inherit',
                                 outline: 'none',
@@ -1043,7 +1064,7 @@ const App: React.FC = () => {
                               className="course-input"
                             />
                             {courseFormErrors.name && (
-                              <span style={{ fontSize: '0.75rem', color: '#ff8b8b', fontWeight: 600 }}>
+                              <span style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 600 }}>
                                 {courseFormErrors.name}
                               </span>
                             )}
@@ -1051,7 +1072,7 @@ const App: React.FC = () => {
 
                           {/* Country Input */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            <label htmlFor="courseCountry" style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.9 }}>
+                            <label htmlFor="courseCountry" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: '0.1rem' }}>
                               País *
                             </label>
                             <input
@@ -1069,9 +1090,9 @@ const App: React.FC = () => {
                                 width: '100%',
                                 padding: '0.85rem 1.25rem',
                                 borderRadius: '10px',
-                                border: `1.5px solid ${courseFormErrors.country ? '#ff6b6b' : 'rgba(255, 255, 255, 0.25)'}`,
-                                background: 'rgba(255, 255, 255, 0.08)',
-                                color: '#ffffff',
+                                border: `1.5px solid ${courseFormErrors.country ? '#ef4444' : '#cbd5e1'}`,
+                                background: '#f8fafc',
+                                color: '#0f172a',
                                 fontSize: '0.9rem',
                                 fontFamily: 'inherit',
                                 outline: 'none',
@@ -1080,7 +1101,7 @@ const App: React.FC = () => {
                               className="course-input"
                             />
                             {courseFormErrors.country && (
-                              <span style={{ fontSize: '0.75rem', color: '#ff8b8b', fontWeight: 600 }}>
+                              <span style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 600 }}>
                                 {courseFormErrors.country}
                               </span>
                             )}
@@ -1088,7 +1109,7 @@ const App: React.FC = () => {
 
                           {/* Phone Input */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            <label htmlFor="coursePhone" style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.9 }}>
+                            <label htmlFor="coursePhone" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: '0.1rem' }}>
                               Teléfono *
                             </label>
                             <input
@@ -1106,9 +1127,9 @@ const App: React.FC = () => {
                                 width: '100%',
                                 padding: '0.85rem 1.25rem',
                                 borderRadius: '10px',
-                                border: `1.5px solid ${courseFormErrors.phone ? '#ff6b6b' : 'rgba(255, 255, 255, 0.25)'}`,
-                                background: 'rgba(255, 255, 255, 0.08)',
-                                color: '#ffffff',
+                                border: `1.5px solid ${courseFormErrors.phone ? '#ef4444' : '#cbd5e1'}`,
+                                background: '#f8fafc',
+                                color: '#0f172a',
                                 fontSize: '0.9rem',
                                 fontFamily: 'inherit',
                                 outline: 'none',
@@ -1117,7 +1138,7 @@ const App: React.FC = () => {
                               className="course-input"
                             />
                             {courseFormErrors.phone && (
-                              <span style={{ fontSize: '0.75rem', color: '#ff8b8b', fontWeight: 600 }}>
+                              <span style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 600 }}>
                                 {courseFormErrors.phone}
                               </span>
                             )}
@@ -1125,7 +1146,7 @@ const App: React.FC = () => {
 
                           {/* Email Input */}
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
-                            <label htmlFor="courseEmail" style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.9 }}>
+                            <label htmlFor="courseEmail" style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569', marginBottom: '0.1rem' }}>
                               Correo Electrónico *
                             </label>
                             <input
@@ -1143,9 +1164,9 @@ const App: React.FC = () => {
                                 width: '100%',
                                 padding: '0.85rem 1.25rem',
                                 borderRadius: '10px',
-                                border: `1.5px solid ${courseFormErrors.email ? '#ff6b6b' : 'rgba(255, 255, 255, 0.25)'}`,
-                                background: 'rgba(255, 255, 255, 0.08)',
-                                color: '#ffffff',
+                                border: `1.5px solid ${courseFormErrors.email ? '#ef4444' : '#cbd5e1'}`,
+                                background: '#f8fafc',
+                                color: '#0f172a',
                                 fontSize: '0.9rem',
                                 fontFamily: 'inherit',
                                 outline: 'none',
@@ -1154,7 +1175,7 @@ const App: React.FC = () => {
                               className="course-input"
                             />
                             {courseFormErrors.email && (
-                              <span style={{ fontSize: '0.75rem', color: '#ff8b8b', fontWeight: 600 }}>
+                              <span style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 600 }}>
                                 {courseFormErrors.email}
                               </span>
                             )}
@@ -1167,7 +1188,9 @@ const App: React.FC = () => {
                                 display: 'flex', 
                                 alignItems: 'center', 
                                 gap: '0.65rem', 
-                                fontSize: '0.82rem', 
+                                fontSize: '0.85rem', 
+                                fontWeight: 500,
+                                color: '#475569',
                                 cursor: 'pointer',
                                 userSelect: 'none'
                               }}
@@ -1191,7 +1214,7 @@ const App: React.FC = () => {
                               <span>Acepto la política de privacidad y datos.</span>
                             </label>
                             {courseFormErrors.policy && (
-                              <span style={{ fontSize: '0.75rem', color: '#ff8b8b', fontWeight: 600, marginLeft: '1.75rem' }}>
+                              <span style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 600, marginLeft: '1.75rem' }}>
                                 {courseFormErrors.policy}
                               </span>
                             )}
@@ -1204,25 +1227,25 @@ const App: React.FC = () => {
                               background: '#EC6255',
                               color: '#ffffff',
                               border: 'none',
-                              borderRadius: '30px',
+                              borderRadius: '8px',
                               padding: '1rem',
                               fontSize: '0.95rem',
-                              fontWeight: 700,
-                              letterSpacing: '0.08em',
+                              fontWeight: 800,
+                              letterSpacing: '0.05em',
                               textTransform: 'uppercase',
                               cursor: 'pointer',
-                              marginTop: '1rem',
-                              boxShadow: '0 10px 20px rgba(236, 98, 85, 0.3)',
+                              marginTop: '0.75rem',
+                              boxShadow: '0 8px 16px rgba(236, 98, 85, 0.25)',
                               transition: 'all 0.3s ease'
                             }}
                             onMouseOver={e => {
                               e.currentTarget.style.background = '#e55345';
-                              e.currentTarget.style.boxShadow = '0 10px 25px rgba(229, 83, 69, 0.45)';
+                              e.currentTarget.style.boxShadow = '0 10px 20px rgba(229, 83, 69, 0.4)';
                               e.currentTarget.style.transform = 'translateY(-2px)';
                             }}
                             onMouseOut={e => {
                               e.currentTarget.style.background = '#EC6255';
-                              e.currentTarget.style.boxShadow = '0 10px 20px rgba(236, 98, 85, 0.3)';
+                              e.currentTarget.style.boxShadow = '0 8px 16px rgba(236, 98, 85, 0.25)';
                               e.currentTarget.style.transform = 'translateY(0)';
                             }}
                           >
@@ -1324,6 +1347,48 @@ const App: React.FC = () => {
           )}
         </div>
 
+        {/* Floating WhatsApp Button */}
+        <a
+          href="https://wa.me/34675471619?text=Hola%20Latmedical%2C%20deseo%20realizar%20una%20consulta%20comercial%20B2B."
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            position: 'fixed',
+            bottom: '24px',
+            right: '24px',
+            width: '60px',
+            height: '60px',
+            borderRadius: '50%',
+            background: '#25D366',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 8px 24px rgba(37, 211, 102, 0.3)',
+            cursor: 'pointer',
+            zIndex: 9999,
+            transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease',
+            textDecoration: 'none'
+          }}
+          onMouseEnter={e => {
+            e.currentTarget.style.transform = 'scale(1.15) rotate(5deg)';
+            e.currentTarget.style.boxShadow = '0 12px 28px rgba(37, 211, 102, 0.45)';
+          }}
+          onMouseLeave={e => {
+            e.currentTarget.style.transform = 'scale(1) rotate(0deg)';
+            e.currentTarget.style.boxShadow = '0 8px 24px rgba(37, 211, 102, 0.3)';
+          }}
+          title="Contactar Asesor WhatsApp"
+        >
+          <svg 
+            viewBox="0 0 24 24" 
+            width="32" 
+            height="32" 
+            fill="#FFFFFF"
+          >
+            <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.747 1.451 5.436.002 9.861-4.422 9.864-9.865.003-2.637-1.022-5.116-2.887-6.983-1.866-1.868-4.349-2.897-6.989-2.899-5.443 0-9.87 4.423-9.873 9.867-.001 1.704.455 3.364 1.322 4.825L1.888 22.09l4.759-1.936zM17.487 14.39c-.3-.15-1.782-.88-2.057-.98-.275-.1-.475-.15-.675.15-.2.3-.775.98-.95 1.18-.175.2-.35.225-.65.075-.3-.15-1.267-.467-2.413-1.49-1.127-1.006-1.888-2.25-2.11-2.625-.222-.375-.025-.578.125-.727.135-.135.3-.35.45-.525.15-.175.2-.3.3-.5s.05-.375-.025-.525C9.444 8.71 8.8 7.15 8.525 6.49c-.268-.646-.54-.558-.75-.569-.175-.008-.375-.01-.575-.01-.2 0-.525.075-.8 1.075-.275 1.08-.75 2.1-.825 2.25-.075.15-.15.3.35.775 2.5 2.375 5.25 2.3 5.75 2.3.5 0 .825-.325 1.075-.625.25-.3.725-.975.8-1.075.075-.1.15-.3.45-.15z" />
+          </svg>
+        </a>
+
         <style>{`
           @media (min-width: 992px) {
             .dual-brands-grid {
@@ -1357,6 +1422,15 @@ const App: React.FC = () => {
           }
           .sub-card-btn:hover {
             background: #03bfd7;
+          }
+          .course-input::placeholder {
+            color: #94a3b8;
+            opacity: 1;
+          }
+          .course-input:focus {
+            background: #ffffff !important;
+            border-color: #03bfd7 !important;
+            box-shadow: 0 0 0 4px rgba(3, 191, 215, 0.12) !important;
           }
         `}</style>
       </CartProvider>

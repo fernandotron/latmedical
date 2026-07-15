@@ -1,0 +1,246 @@
+[
+  {
+    "productId": "vlift-mono",
+    "hasVariants": true,
+    "stock": 0,
+    "variants": [
+      {
+        "id": "30g-25",
+        "name": "30G x 25mm",
+        "stock": 150
+      },
+      {
+        "id": "29g-38",
+        "name": "29G x 38mm",
+        "stock": 120
+      },
+      {
+        "id": "29g-50",
+        "name": "29G x 50mm",
+        "stock": 79
+      },
+      {
+        "id": "27g-60",
+        "name": "27G x 60mm",
+        "stock": 95
+      },
+      {
+        "id": "25g-90",
+        "name": "25G x 90mm",
+        "stock": 50
+      }
+    ]
+  },
+  {
+    "productId": "vlift-biocanula",
+    "hasVariants": true,
+    "stock": 0,
+    "variants": [
+      {
+        "id": "23g-38",
+        "name": "23G x 38mm",
+        "stock": 45
+      },
+      {
+        "id": "23g-60",
+        "name": "23G x 60mm",
+        "stock": 50
+      }
+    ]
+  },
+  {
+    "productId": "vlift-single-screw",
+    "hasVariants": true,
+    "stock": 0,
+    "variants": [
+      {
+        "id": "29g-38",
+        "name": "29G x 38mm",
+        "stock": 60
+      },
+      {
+        "id": "27g-50",
+        "name": "27G x 50mm",
+        "stock": 75
+      }
+    ]
+  },
+  {
+    "productId": "vlift-double-screw",
+    "hasVariants": true,
+    "stock": 0,
+    "variants": [
+      {
+        "id": "27g-50",
+        "name": "27G x 50mm",
+        "stock": 40
+      },
+      {
+        "id": "26g-60",
+        "name": "26G x 60mm",
+        "stock": 35
+      }
+    ]
+  },
+  {
+    "productId": "vlift-genesis",
+    "hasVariants": true,
+    "stock": 0,
+    "variants": [
+      {
+        "id": "19g-70",
+        "name": "19G x 70mm",
+        "stock": 30
+      },
+      {
+        "id": "19g-90",
+        "name": "19G x 90mm",
+        "stock": 35
+      },
+      {
+        "id": "21g-70",
+        "name": "21G x 70mm",
+        "stock": 25
+      },
+      {
+        "id": "21g-90",
+        "name": "21G x 90mm",
+        "stock": 30
+      },
+      {
+        "id": "23g-70",
+        "name": "23G x 70mm",
+        "stock": 20
+      },
+      {
+        "id": "23g-90",
+        "name": "23G x 90mm",
+        "stock": 25
+      }
+    ]
+  },
+  {
+    "productId": "vlift-nose",
+    "hasVariants": true,
+    "stock": 0,
+    "variants": [
+      {
+        "id": "19g-38",
+        "name": "19G x 38mm",
+        "stock": 55
+      },
+      {
+        "id": "19g-50",
+        "name": "19G x 50mm",
+        "stock": 40
+      },
+      {
+        "id": "21g-60",
+        "name": "21G x 60mm",
+        "stock": 45
+      }
+    ]
+  },
+  {
+    "productId": "vlift-eye",
+    "hasVariants": true,
+    "stock": 0,
+    "variants": [
+      {
+        "id": "30g-25",
+        "name": "30G x 25mm",
+        "stock": 90
+      },
+      {
+        "id": "30g-38",
+        "name": "30G x 38mm",
+        "stock": 110
+      }
+    ]
+  },
+  {
+    "productId": "vlift-premium",
+    "hasVariants": true,
+    "stock": 0,
+    "variants": [
+      {
+        "id": "19g-70",
+        "name": "19G x 70mm",
+        "stock": 45
+      },
+      {
+        "id": "19g-90",
+        "name": "19G x 90mm",
+        "stock": 50
+      },
+      {
+        "id": "21g-70",
+        "name": "21G x 70mm",
+        "stock": 60
+      },
+      {
+        "id": "21g-90",
+        "name": "21G x 90mm",
+        "stock": 55
+      },
+      {
+        "id": "23g-70",
+        "name": "23G x 70mm",
+        "stock": 40
+      },
+      {
+        "id": "23g-90",
+        "name": "23G x 90mm",
+        "stock": 45
+      }
+    ]
+  },
+  {
+    "productId": "vlift-cones",
+    "hasVariants": true,
+    "stock": 0,
+    "variants": [
+      {
+        "id": "18g-100",
+        "name": "18G x 100mm",
+        "stock": 20
+      }
+    ]
+  },
+  {
+    "productId": "vlift-tensio",
+    "hasVariants": true,
+    "stock": 0,
+    "variants": [
+      {
+        "id": "19g-100",
+        "name": "19G x 100mm",
+        "stock": 15
+      }
+    ]
+  },
+  {
+    "productId": "seffi-filler",
+    "hasVariants": false,
+    "stock": 10,
+    "variants": []
+  },
+  {
+    "productId": "seffi-hair",
+    "hasVariants": false,
+    "stock": 0,
+    "variants": []
+  },
+  {
+    "productId": "seffi-care",
+    "hasVariants": false,
+    "stock": 0,
+    "variants": []
+  },
+  {
+    "productId": "seffi-gyn",
+    "hasVariants": false,
+    "stock": 0,
+    "variants": []
+  }
+]

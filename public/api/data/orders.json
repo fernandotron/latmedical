@@ -1,0 +1,41 @@
+[
+  {
+    "fullName": "Fernando Montilla",
+    "specialty": "Medico",
+    "licenseNumber": "MN12345",
+    "phone": "634021915",
+    "email": "ASSISTANT@VLIFT.ORG",
+    "address": "CALLE MI ABUELA 2",
+    "city": "QUIEN SABE",
+    "province": "CABA",
+    "paymentMethod": "transfer",
+    "items": [
+      {
+        "productId": "seffi-filler",
+        "productName": "SEFFILLER®",
+        "brand": "Seffiline",
+        "quantity": 2,
+        "price": 520
+      },
+      {
+        "productId": "vlift-mono",
+        "productName": "V Lift Pro Mono (Hilos Lisos)",
+        "brand": "Vlift Pro",
+        "variantName": "29G x 50mm",
+        "quantity": 1,
+        "price": 30
+      },
+      {
+        "productId": "vlift-single-screw",
+        "productName": "V Lift Pro Single Screw (Tornillo Simple)",
+        "brand": "Vlift Pro",
+        "quantity": 1,
+        "price": 35
+      }
+    ],
+    "total": 1105,
+    "id": "LM-843613",
+    "date": "15 de jul de 2026, 08:34 p. m.",
+    "status": "Despachado"
+  }
+]

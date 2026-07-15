@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight, Award, ShieldCheck, Activity, ArrowRight } from 'lucide-react';
+import defaultSlides from '../data/home_slides.json';
 
 interface HeroProps {
   setActiveTab: (tab: string) => void;
@@ -17,44 +18,27 @@ interface Slide {
   image: string;
 }
 
+// Function to map string to React icon element
+const getIcon = (iconName: string) => {
+  switch (iconName) {
+    case 'Award':
+      return <Award size={14} color="var(--accent-green)" />;
+    case 'Activity':
+      return <Activity size={14} color="var(--accent-green)" />;
+    case 'ShieldCheck':
+      return <ShieldCheck size={14} color="var(--accent-green)" />;
+    default:
+      return <Award size={14} color="var(--accent-green)" />;
+  }
+};
+
 export const Hero: React.FC<HeroProps> = ({ setActiveTab }) => {
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  const slides: Slide[] = [
-    {
-      id: 1,
-      badge: 'Distribuidor Oficial Exclusivo',
-      badgeIcon: <Award size={14} color="var(--accent-green)" />,
-      title: 'Hilos PDO & Hilos Tensores ',
-      highlightText: 'V Lift Pro',
-      subtitle: 'La gama más completa de monofilamentos, espiculados y conos moldeados con tecnología Painless para lifting biológico no quirúrgico.',
-      buttonText: 'Comprar Hilos PDO',
-      buttonAction: 'products',
-      image: 'https://images.unsplash.com/photo-1614850523459-c2f4c699c52e?auto=format&fit=crop&q=80&w=1200'
-    },
-    {
-      id: 2,
-      badge: 'Medicina Regenerativa Autóloga',
-      badgeIcon: <Activity size={14} color="var(--accent-green)" />,
-      title: 'Terapia de Microinjerto Celular ',
-      highlightText: 'Seffiline',
-      subtitle: 'Dispositivos médicos estériles y patentados para recolección de tejido adiposo superficial rico en células madre ADSCs. Soluciones SEFFILLER®, SEFFIHAIR® y SEFFIGYN®.',
-      buttonText: 'Ver Kits Seffiline',
-      buttonAction: 'products',
-      image: '/seffiline-biology-bg.png'
-    },
-    {
-      id: 3,
-      badge: 'Garantía y Habilitación ANMAT',
-      badgeIcon: <ShieldCheck size={14} color="var(--accent-green)" />,
-      title: 'Excelencia y Soporte Técnico en ',
-      highlightText: 'Toda Argentina',
-      subtitle: 'Garantizamos la legitimidad y trazabilidad de cada insumo importado. Provisión exclusiva para profesionales de la salud matriculados.',
-      buttonText: 'Contactar un Asesor',
-      buttonAction: 'contact',
-      image: 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&q=80&w=1200'
-    }
-  ];
+  const slides: Slide[] = defaultSlides.map(slide => ({
+    ...slide,
+    badgeIcon: getIcon(slide.iconName)
+  }));
 
   // Auto-play interval
   useEffect(() => {

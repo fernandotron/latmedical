@@ -14,6 +14,21 @@ export const Contact: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Save contact submission locally
+    fetch('/api/save-submissions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'Contacto Web',
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        country: formData.specialty.trim(),
+        message: formData.message.trim()
+      })
+    }).catch(err => console.error('Error saving contact submission:', err));
+
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
