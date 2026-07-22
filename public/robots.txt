@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://latmedical.com.ar/sitemap.xml
