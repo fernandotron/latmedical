@@ -153,6 +153,12 @@ export const Contact: React.FC = () => {
                       style={{ color: 'inherit', textDecoration: 'none' }}
                       onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-green)'}
                       onMouseLeave={(e) => e.currentTarget.style.color = 'inherit'}
+                      onClick={() => {
+                        (window as any).gtag?.('event', 'click_whatsapp_contact_page', {
+                          'event_category': 'Contact',
+                          'event_label': 'Contact Page Link'
+                        });
+                      }}
                     >
                       +54 9 11 5457-7210 (Comercial)
                     </a>

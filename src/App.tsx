@@ -1427,6 +1427,12 @@ const App: React.FC = () => {
             rel="noopener noreferrer"
             className="whatsapp-button"
             title="Contactar Asesor WhatsApp"
+            onClick={() => {
+              (window as any).gtag?.('event', 'click_whatsapp_floating', {
+                'event_category': 'Contact',
+                'event_label': 'Floating Button'
+              });
+            }}
           >
             <svg 
               viewBox="0 0 24 24" 

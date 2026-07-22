@@ -165,6 +165,16 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
     const savedSettings = localStorage.getItem('latmedical_web_settings');
     const settings = savedSettings ? JSON.parse(savedSettings) : defaultSettings;
     const whatsappNumber = settings.whatsappNumber || defaultSettings.whatsappNumber;
+    try {
+      (window as any).gtag?.('event', 'purchase_whatsapp_checkout', {
+        'event_category': 'Ecommerce',
+        'event_label': 'WhatsApp Checkout',
+        'value': cartTotal,
+        'currency': 'USD'
+      });
+    } catch (e) {
+      console.error('Error tracking purchase:', e);
+    }
     window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(text)}`, '_blank');
   };
 
