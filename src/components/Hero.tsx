@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, Award, ShieldCheck, Activity, ArrowRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Award, ShieldCheck, Activity, ArrowRight, GraduationCap } from 'lucide-react';
 import defaultSlides from '../data/home_slides.json';
+import { getAssetUrl } from '../utils/assets';
 
 interface HeroProps {
   setActiveTab: (tab: string) => void;
@@ -27,6 +28,8 @@ const getIcon = (iconName: string) => {
       return <Activity size={14} color="var(--accent-green)" />;
     case 'ShieldCheck':
       return <ShieldCheck size={14} color="var(--accent-green)" />;
+    case 'GraduationCap':
+      return <GraduationCap size={14} color="var(--accent-green)" />;
     default:
       return <Award size={14} color="var(--accent-green)" />;
   }
@@ -37,6 +40,7 @@ export const Hero: React.FC<HeroProps> = ({ setActiveTab }) => {
 
   const slides: Slide[] = defaultSlides.map(slide => ({
     ...slide,
+    image: getAssetUrl(slide.image),
     badgeIcon: getIcon(slide.iconName)
   }));
 
@@ -57,13 +61,24 @@ export const Hero: React.FC<HeroProps> = ({ setActiveTab }) => {
   };
 
   const handleCtaClick = (action: string) => {
-    setActiveTab(action);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
     if (action === 'products') {
+      setActiveTab('products');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
       setTimeout(() => {
         const element = document.getElementById('catalog-section');
         if (element) element.scrollIntoView({ behavior: 'smooth' });
       }, 100);
+    } else if (action === 'courses' || action === 'formacion') {
+      setActiveTab('home');
+      setTimeout(() => {
+        const element = document.getElementById('cursos-form-section');
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      setActiveTab(action);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ShoppingBag, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
+import { getAssetUrl } from '../utils/assets';
 
 interface HilosPDOPageProps {
   onContact: () => void;
@@ -195,7 +196,7 @@ const ThreadImg: React.FC<{ src: string; alt: string }> = ({ src, alt }) => (
     justifyContent: 'center',
   }}>
     <img
-      src={src}
+      src={getAssetUrl(src)}
       alt={alt}
       style={{
         width: '88%',
@@ -375,7 +376,7 @@ export const HilosPDOPage: React.FC<HilosPDOPageProps> = ({ onContact, onBack, o
         left: 0,
         width: '100%',
         height: '100%',
-        backgroundImage: 'url("/2020/2025/04/parallax-gris.png")',
+        backgroundImage: `url("${getAssetUrl('/2020/2025/04/parallax-gris.png')}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         opacity: 0.15,
@@ -538,7 +539,7 @@ export const HilosPDOPage: React.FC<HilosPDOPageProps> = ({ onContact, onBack, o
             >
               {/* mini image */}
               <div style={{ width: '56px', height: '56px', background: '#ffffff', border: '1px solid #eaeaea', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                <img src={p.img} alt={p.tag} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                <img src={getAssetUrl(p.img)} alt={p.tag} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
               </div>
               {p.badge && (
                 <span style={{ background: BRAND, color: '#fff', fontSize: '0.6rem', padding: '0.15rem 0.4rem', borderRadius: '3px' }}>{p.badge}</span>

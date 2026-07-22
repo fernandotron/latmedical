@@ -167,10 +167,11 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         minute: '2-digit'
       }),
       status: 'Pendiente',
-      stockDecremented: false,
+      stockDecremented: true,
       timestamp: Date.now()
     };
 
+    decrementStockForOrder(newOrder.items);
     setOrders((prevOrders) => [newOrder, ...prevOrders]);
     return newOrder;
   };
@@ -182,12 +183,12 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         
         let stockDecremented = o.stockDecremented || false;
         
-        if (status === 'Despachado' && !stockDecremented) {
-          decrementStockForOrder(o.items);
-          stockDecremented = true;
-        } else if (status !== 'Despachado' && stockDecremented) {
+        if (status === 'Cancelado' && stockDecremented) {
           incrementStockForOrder(o.items);
           stockDecremented = false;
+        } else if (status !== 'Cancelado' && !stockDecremented) {
+          decrementStockForOrder(o.items);
+          stockDecremented = true;
         }
         
         return { ...o, status, stockDecremented };
@@ -196,7 +197,13 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const deleteOrder = (orderId: string) => {
-    setOrders((prevOrders) => prevOrders.filter((o) => o.id !== orderId));
+    setOrders((prevOrders) => {
+      const orderToDelete = prevOrders.find((o) => o.id === orderId);
+      if (orderToDelete && orderToDelete.stockDecremented) {
+        incrementStockForOrder(orderToDelete.items);
+      }
+      return prevOrders.filter((o) => o.id !== orderId);
+    });
   };
 
   return (

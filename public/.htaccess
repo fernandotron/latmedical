@@ -1,8 +1,14 @@
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
-  RewriteRule ^index\.html$ - [L]
+
+  # Force HTTPS
+  RewriteCond %{HTTPS} off
+  RewriteCond %{HTTP_HOST} ^(?:www\.)?latmedical\.com\.ar$ [NC]
+  RewriteRule ^https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+  # Single Page Application fallback
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule . /index.html [L]
+  RewriteRule ^ index.html [L]
 </IfModule>

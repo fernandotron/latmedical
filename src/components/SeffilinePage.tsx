@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ArrowLeft, ShoppingBag, ChevronDown, ChevronUp, Activity, Sparkles, ShieldCheck } from 'lucide-react';
+import { getAssetUrl } from '../utils/assets';
 
 interface SeffilinePageProps {
   onContact: () => void;
@@ -131,14 +132,18 @@ export const SeffilinePage: React.FC<SeffilinePageProps> = ({ onContact, onBack,
       overlayColor: 'rgba(209, 21, 101, 0.75)',
       logoImg: '/logo-seffigyn.png'
     }
-  ];
+  ].map(kit => ({
+    ...kit,
+    image: getAssetUrl(kit.image),
+    logoImg: getAssetUrl(kit.logoImg)
+  }));
 
   return (
     <div style={{ fontFamily: "'Montserrat', 'Open Sans', sans-serif", background: '#ffffff' }}>
       
       {/* ── HERO BANNER ── */}
       <section style={{
-        background: `linear-gradient(rgba(17, 24, 39, 0.75), rgba(17, 24, 39, 0.85)), url("/seffiline-biology-bg.png")`,
+        background: `linear-gradient(rgba(17, 24, 39, 0.75), rgba(17, 24, 39, 0.85)), url("${getAssetUrl('/seffiline-biology-bg.png')}")`,
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         padding: '8rem 0 5rem 0',
@@ -186,7 +191,8 @@ export const SeffilinePage: React.FC<SeffilinePageProps> = ({ onContact, onBack,
               fontWeight: 900,
               lineHeight: 1.1,
               marginBottom: '1.5rem',
-              letterSpacing: '-0.02em'
+              letterSpacing: '-0.02em',
+              color: '#ffffff'
             }}>
               Terapia Celular<br />
               <span style={{ color: '#03bfd7' }}>Seffiline®</span>

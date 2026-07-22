@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { products, Product } from '../data/products';
 import { ProductCard } from './ProductCard';
 import { Search, Filter, ShieldAlert } from 'lucide-react';
+import { getAssetUrl } from '../utils/assets';
 
 type BrandFilter = 'All' | 'Vlift Pro' | 'Seffiline';
 
@@ -42,7 +43,7 @@ export const Catalog: React.FC<CatalogProps> = ({ onViewDetails }) => {
           left: 0,
           width: '100%',
           height: '100%',
-          backgroundImage: 'url("/2020/2025/04/parallax-gris.png")',
+          backgroundImage: `url("${getAssetUrl('/2020/2025/04/parallax-gris.png')}")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.15,

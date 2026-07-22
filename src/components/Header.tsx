@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Menu, X, Settings } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { getAssetUrl } from '../utils/assets';
 
 interface HeaderProps {
   activeTab: string;
@@ -64,7 +65,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
           }}
         >
           <img 
-            src="/logo-full.png" 
+            src={getAssetUrl('/logo-full.png')} 
             alt="Latmedical International" 
             style={{
               height: '42px',

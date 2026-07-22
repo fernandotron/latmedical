@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Mail, Phone, MapPin, Send, Activity } from 'lucide-react';
+import { getAssetUrl } from '../utils/assets';
 
 export const Contact: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -60,7 +61,7 @@ export const Contact: React.FC = () => {
           left: 0,
           width: '100%',
           height: '100%',
-          backgroundImage: 'url("/2020/2025/04/parallax-gris.png")',
+          backgroundImage: `url("${getAssetUrl('/2020/2025/04/parallax-gris.png')}")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.15,
@@ -123,7 +124,9 @@ export const Contact: React.FC = () => {
                 <div>
                   <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.2rem' }}>Oficina Comercial</h4>
                   <p style={{ fontSize: '0.9rem', color: 'var(--text-medium)' }}>
-                    Hipólito Yrigoyen 4230, Almagro, C.A.B.A., Argentina
+                    Av. Cabildo 1237, Piso 7.<br />
+                    (CP: C1426AAM). Buenos Aires,<br />
+                    Argentina
                   </p>
                 </div>
               </div>
@@ -141,12 +144,18 @@ export const Contact: React.FC = () => {
                   <Phone size={20} />
                 </div>
                 <div>
-                  <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.2rem' }}>Líneas de Atención</h4>
+                  <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.2rem' }}>Línea Comercial</h4>
                   <p style={{ fontSize: '0.9rem', color: 'var(--text-medium)', margin: 0 }}>
-                    +54 11 4981-1478 (Comercial)
-                  </p>
-                  <p style={{ fontSize: '0.9rem', color: 'var(--text-medium)', margin: 0 }}>
-                    +54 9 11 2345-6789 (WhatsApp Oficial)
+                    <a 
+                      href="https://wa.me/5491154577210?text=Hola%20Latmedical%2C%20deseo%20realizar%20una%20consulta%20comercial." 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      style={{ color: 'inherit', textDecoration: 'none' }}
+                      onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-green)'}
+                      onMouseLeave={(e) => e.currentTarget.style.color = 'inherit'}
+                    >
+                      +54 9 11 5457-7210 (Comercial)
+                    </a>
                   </p>
                 </div>
               </div>
@@ -167,9 +176,6 @@ export const Contact: React.FC = () => {
                   <h4 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '0.2rem' }}>Correo Electrónico</h4>
                   <p style={{ fontSize: '0.9rem', color: 'var(--text-medium)', margin: 0 }}>
                     info@latmedical.com.ar
-                  </p>
-                  <p style={{ fontSize: '0.9rem', color: 'var(--text-medium)', margin: 0 }}>
-                    ventas@latmedical.com.ar
                   </p>
                 </div>
               </div>
@@ -382,6 +388,19 @@ export const Contact: React.FC = () => {
         }
       `}</style>
       </section>
+
+      {/* Full-width Google Map */}
+      <div style={{ width: '100%', height: '450px', border: 0, borderTop: '1px solid var(--border-light)', display: 'block' }}>
+        <iframe
+          src="https://maps.google.com/maps?q=Av.%20Cabildo%201237%2C%20C1426AAM%20Buenos%20Aires%2C%20Argentina&t=&z=16&ie=UTF8&iwloc=&output=embed"
+          width="100%"
+          height="100%"
+          style={{ border: 0, display: 'block' }}
+          allowFullScreen={true}
+          loading="lazy"
+          title="Ubicación Latmedical"
+        ></iframe>
+      </div>
     </div>
   );
 };

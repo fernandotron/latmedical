@@ -3,6 +3,7 @@ import { Product } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useInventory } from '../context/InventoryContext';
 import { Check, Eye } from 'lucide-react';
+import { getAssetUrl } from '../utils/assets';
 
 interface ProductCardProps {
   product: Product;
@@ -63,7 +64,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
       {/* Product Image and Badges */}
       <div style={{ position: 'relative', height: '190px', overflow: 'hidden', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem' }}>
         <img 
-          src={product.image} 
+          src={getAssetUrl(product.image)} 
           alt={product.name} 
           style={{
             maxWidth: '100%',

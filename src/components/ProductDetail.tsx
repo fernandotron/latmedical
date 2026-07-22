@@ -3,6 +3,7 @@ import { Product, products } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useInventory } from '../context/InventoryContext';
 import { ArrowLeft, ShoppingCart, Check, ShieldAlert, Award, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getAssetUrl } from '../utils/assets';
 
 interface ProductDetailProps {
   product: Product;
@@ -26,7 +27,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
   const [activeTab, setActiveTab] = useState<DetailTab>('desc');
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
-  const [mainImage, setMainImage] = useState(product.image);
+  const [mainImage, setMainImage] = useState(getAssetUrl(product.image));
   
   // Zoom states
   const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
@@ -34,7 +35,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
 
   // Sync state whenever the viewed product changes
   useEffect(() => {
-    setMainImage(product.image);
+    setMainImage(getAssetUrl(product.image));
     setQty(1);
     setAdded(false);
     setActiveTab('desc');
@@ -72,7 +73,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
   const { stock: activeStock, name: selectedVariantName } = getActiveStockInfo();
 
   // Alternative images placeholder (only primary image is kept)
-  const alternativeImages = [product.image];
+  const alternativeImages = [getAssetUrl(product.image)];
 
   const handleQtyChange = (val: number) => {
     if (val < 1) return;
@@ -632,7 +633,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
                     }}
                   >
                     <div style={{ height: '180px', overflow: 'hidden', background: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.75rem' }}>
-                      <img src={relProduct.image} alt={relProduct.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
+                      <img src={getAssetUrl(relProduct.image)} alt={relProduct.name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }} />
                     </div>
                     <div style={{ padding: '1.25rem', flexGrow: 1, display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                       <span style={{ fontSize: '0.72rem', color: 'var(--text-light)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{relProduct.brand}</span>

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Trash2, Plus, Minus, CreditCard, Landmark, CheckCircle2, ArrowLeft, ExternalLink, Printer } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { getAssetUrl } from '../utils/assets';
 import { useInventory, OrderItem } from '../context/InventoryContext';
 import defaultSettings from '../data/general_settings.json';
 
@@ -309,7 +310,7 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                         }}
                       >
                         <img 
-                          src={item.product.image} 
+                          src={getAssetUrl(item.product.image)} 
                           alt={item.product.name} 
                           style={{ width: '50px', height: '50px', objectFit: 'contain', borderRadius: '4px', background: '#ffffff' }}
                         />

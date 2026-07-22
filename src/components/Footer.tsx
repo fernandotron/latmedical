@@ -1,5 +1,6 @@
 import React from 'react';
 import { ShieldAlert, Heart } from 'lucide-react';
+import { getAssetUrl } from '../utils/assets';
 
 interface FooterProps {
   setActiveTab: (tab: string) => void;
@@ -35,7 +36,7 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab }) => {
               alignItems: 'center'
             }}>
               <img 
-                src="/logo-full.png" 
+                src={getAssetUrl('/logo-full.png')} 
                 alt="Latmedical International" 
                 style={{
                   height: '42px',
@@ -182,7 +183,61 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab }) => {
           fontSize: '0.75rem',
           color: 'rgba(255,255,255,0.5)'
         }}>
-          <span>&copy; {new Date().getFullYear()} Latmedical. Todos los derechos reservados.</span>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <span>&copy; {new Date().getFullYear()} Latmedical. Todos los derechos reservados.</span>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap', alignItems: 'center' }}>
+              <button
+                onClick={() => handleNavClick('privacy')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: '0.72rem',
+                  cursor: 'pointer',
+                  transition: 'var(--transition-fast)',
+                  padding: 0
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-green)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+              >
+                Política de Privacidad
+              </button>
+              <span style={{ fontSize: '0.6rem', opacity: 0.5 }}>|</span>
+              <button
+                onClick={() => handleNavClick('cookies')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: '0.72rem',
+                  cursor: 'pointer',
+                  transition: 'var(--transition-fast)',
+                  padding: 0
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-green)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+              >
+                Política de Cookies
+              </button>
+              <span style={{ fontSize: '0.6rem', opacity: 0.5 }}>|</span>
+              <button
+                onClick={() => handleNavClick('terms')}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'rgba(255,255,255,0.5)',
+                  fontSize: '0.72rem',
+                  cursor: 'pointer',
+                  transition: 'var(--transition-fast)',
+                  padding: 0
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-green)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+              >
+                Términos y Condiciones
+              </button>
+            </div>
+          </div>
           <span style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
             Desarrollado con <Heart size={10} fill="var(--accent-green)" color="var(--accent-green)" /> para profesionales médicos.
           </span>
