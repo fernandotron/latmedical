@@ -5,7 +5,7 @@
   # Force HTTPS
   RewriteCond %{HTTPS} off
   RewriteCond %{HTTP_HOST} ^(?:www\.)?latmedical\.com\.ar$ [NC]
-  RewriteRule ^https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+  RewriteRule ^ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
 
   # Single Page Application fallback
   RewriteCond %{REQUEST_FILENAME} !-f
