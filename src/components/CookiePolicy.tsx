@@ -22,7 +22,7 @@ export const CookiePolicy: React.FC = () => {
           left: 0,
           width: '100%',
           height: '100%',
-          backgroundImage: `url("${getAssetUrl('/2020/2025/04/parallax-gris.png')}")`,
+          backgroundImage: `url("${getAssetUrl('/images/parallax-gris.png')}")`,
           backgroundSize: 'cover',
           backgroundPosition: 'center',
           opacity: 0.15,

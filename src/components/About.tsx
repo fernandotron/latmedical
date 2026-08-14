@@ -136,7 +136,7 @@ export const About: React.FC = () => {
         <div style={{
           position: 'absolute',
           top: 0, left: 0, width: '100%', height: '100%',
-          backgroundImage: `url("${getAssetUrl('/2020/2025/04/parallax-gris.png')}")`,
+          backgroundImage: `url("${getAssetUrl('/images/parallax-gris.png')}")`,
           backgroundSize: 'cover', backgroundPosition: 'center',
           opacity: 0.15, zIndex: 1
         }} />
@@ -180,7 +180,7 @@ export const About: React.FC = () => {
               height: '380px'
             }}>
               <img 
-                src={getAssetUrl('/2020/2025/04/intro-1.png')} 
+                src={getAssetUrl('/images/intro-1.png')} 
                 alt="Latmedical Medicina Estética" 
                 style={{ width: '100%', height: '100%', objectFit: 'cover' }}
               />

@@ -73,7 +73,7 @@ export const SeffilinePage: React.FC<SeffilinePageProps> = ({ onContact, onBack,
         'Preservación íntegra de la viabilidad celular de células madre',
         'Resultados biológicos progresivos y sumamente duraderos'
       ],
-      image: '/2020/2026/01/Seffiller-producto.png',
+      image: '/images/products/seffiller.png',
       bgImg: 'https://images.unsplash.com/photo-1512290923902-8a9f81dc236c?auto=format&fit=crop&q=80&w=800',
       overlayColor: 'rgba(211, 106, 75, 0.75)',
       logoImg: '/logo-seffiller.png'
@@ -91,7 +91,7 @@ export const SeffilinePage: React.FC<SeffilinePageProps> = ({ onContact, onBack,
         'Procedimiento rápido en consultorio médico bajo anestesia local',
         'Alternativa biológica no quirúrgica de alta potencia para alopecias'
       ],
-      image: '/2020/2026/07/Seffihair-producto.png',
+      image: '/images/products/seffihair.png',
       bgImg: 'https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&q=80&w=800',
       overlayColor: 'rgba(33, 121, 163, 0.75)',
       logoImg: '/logo-seffihair.png'
@@ -109,7 +109,7 @@ export const SeffilinePage: React.FC<SeffilinePageProps> = ({ onContact, onBack,
         'Estimulación activa de la neovascularización y cierre de tejidos',
         'Tratamiento 100% autólogo libre de rechazos o incompatibilidades'
       ],
-      image: '/2020/2026/07/Sefficare-producto.png',
+      image: '/images/products/sefficare.png',
       bgImg: 'https://images.unsplash.com/photo-1530026405186-ed1ea0ac7a63?auto=format&fit=crop&q=80&w=800',
       overlayColor: 'rgba(33, 133, 89, 0.75)',
       logoImg: '/logo-sefficare.png'
@@ -127,7 +127,7 @@ export const SeffilinePage: React.FC<SeffilinePageProps> = ({ onContact, onBack,
         'Mejora funcional y estética de la región íntima en sesión única',
         'Mínimo tiempo de inactividad con rápida recuperación de la paciente'
       ],
-      image: '/2020/2026/07/Seffigyn-producto.png',
+      image: '/images/products/seffigyn.png',
       bgImg: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?auto=format&fit=crop&q=80&w=800',
       overlayColor: 'rgba(209, 21, 101, 0.75)',
       logoImg: '/logo-seffigyn.png'
