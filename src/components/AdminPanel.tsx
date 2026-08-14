@@ -21,10 +21,12 @@ import {
   Upload, 
   RefreshCw,
   Flame,
-  Download
+  Download,
+  FileText
 } from 'lucide-react';
 import defaultSettings from '../data/general_settings.json';
 import defaultSlides from '../data/home_slides.json';
+import { StockReportModal } from './StockReportModal';
 
 type AdminTab = 'inventory' | 'clearance' | 'orders' | 'settings' | 'submissions' | 'add-product' | 'edit-product';
 
@@ -118,6 +120,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
   const [clrBatchNumber, setClrBatchNumber] = useState('');
   const [clrNote, setClrNote] = useState('');
   const [clrFormFeedback, setClrFormFeedback] = useState(false);
+  const [isStockReportOpen, setIsStockReportOpen] = useState(false);
 
   // Clearance Inline Edits State
   const [clrEditState, setClrEditState] = useState<Record<string, { stock: number; price: number; expiryDate: string; batchNumber: string }>>({});
@@ -1392,8 +1395,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
               <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
                 <button
                   type="button"
+                  onClick={() => setIsStockReportOpen(true)}
+                  style={{
+                    background: '#0f172a',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '0.75rem 1.25rem',
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    boxShadow: 'var(--shadow-sm)',
+                    transition: 'var(--transition-fast)',
+                    fontFamily: 'inherit'
+                  }}
+                  onMouseOver={e => e.currentTarget.style.background = '#1e293b'}
+                  onMouseOut={e => e.currentTarget.style.background = '#0f172a'}
+                >
+                  <FileText size={16} /> Reporte PDF (A4)
+                </button>
+                <button
+                  type="button"
                   onClick={() => handleExportStockCSV(true)}
-                  title="Descargar reporte completo en formato CSV compatible con Microsoft Excel (incluye catálogo regular y lotes outlet)"
                   style={{
                     background: '#059669',
                     color: '#ffffff',
@@ -1413,7 +1439,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   onMouseOver={e => e.currentTarget.style.background = '#047857'}
                   onMouseOut={e => e.currentTarget.style.background = '#059669'}
                 >
-                  <Download size={16} /> Descargar Stock (Excel / CSV)
+                  <Download size={16} /> Descargar Excel (.CSV)
                 </button>
                 <button
                   onClick={handleSaveAllProducts}
@@ -1782,28 +1808,56 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   </p>
                 </div>
               </div>
-              <button
-                type="button"
-                onClick={() => handleExportStockCSV(true)}
-                style={{
-                  background: '#059669',
-                  color: '#ffffff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  padding: '0.7rem 1.2rem',
-                  fontSize: '0.8rem',
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '0.4rem',
-                  boxShadow: 'var(--shadow-sm)',
-                  fontFamily: 'inherit',
-                  flexShrink: 0
-                }}
-              >
-                <Download size={15} /> Descargar Stock & Outlet (CSV)
-              </button>
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => setIsStockReportOpen(true)}
+                  style={{
+                    background: '#0f172a',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '0.7rem 1.1rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    boxShadow: 'var(--shadow-sm)',
+                    fontFamily: 'inherit',
+                    flexShrink: 0
+                  }}
+                  onMouseOver={e => e.currentTarget.style.background = '#1e293b'}
+                  onMouseOut={e => e.currentTarget.style.background = '#0f172a'}
+                >
+                  <FileText size={15} /> Reporte PDF (A4)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleExportStockCSV(true)}
+                  style={{
+                    background: '#059669',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '0.7rem 1.1rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    boxShadow: 'var(--shadow-sm)',
+                    fontFamily: 'inherit',
+                    flexShrink: 0
+                  }}
+                  onMouseOver={e => e.currentTarget.style.background = '#047857'}
+                  onMouseOut={e => e.currentTarget.style.background = '#059669'}
+                >
+                  <Download size={15} /> Descargar Excel (.CSV)
+                </button>
+              </div>
             </div>
 
             {/* Form to create a new clearance offer */}
@@ -2826,6 +2880,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
             </div>
           </form>
         )}
+
+        {/* Stock PDF / Excel Report Modal */}
+        <StockReportModal
+          isOpen={isStockReportOpen}
+          onClose={() => setIsStockReportOpen(false)}
+          products={products}
+          inventory={inventory}
+          clearanceOffers={clearanceOffers}
+          editState={editState}
+          onExportCSV={() => handleExportStockCSV(true)}
+        />
 
       </div>
 
