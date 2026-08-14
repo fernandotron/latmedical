@@ -175,6 +175,12 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const [clearanceOffers, setClearanceOffers] = useState<ClearanceOffer[]>(() => {
+    const isV3 = localStorage.getItem('latmedical_clearance_v3');
+    if (!isV3) {
+      localStorage.setItem('latmedical_clearance_v3', 'true');
+      localStorage.setItem('latmedical_clearance', JSON.stringify(defaultClearanceData));
+      return defaultClearanceData as ClearanceOffer[];
+    }
     const saved = localStorage.getItem('latmedical_clearance');
     return saved ? JSON.parse(saved) : (defaultClearanceData as ClearanceOffer[]);
   });
