@@ -123,70 +123,167 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
-        padding: '0 clamp(1.25rem, 3.5vw, 3.5rem)'
+        maxWidth: '1440px',
+        margin: '0 auto',
+        padding: '0 clamp(1.25rem, 3vw, 2.5rem)'
       }}>
-        {/* Brand Logo - Aligned to far left */}
-        <div 
-          onClick={() => handleNavClick('home')}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            cursor: 'pointer',
-            flexShrink: 0
-          }}
-        >
-          <img 
-            src={getAssetUrl('/logo-full.png')} 
-            alt="Latmedical International" 
+        {/* Left Side: Brand Logo + Desktop Navigation together */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(2rem, 3vw, 3.5rem)' }}>
+          {/* Brand Logo */}
+          <div 
+            onClick={() => handleNavClick('home')}
             style={{
-              height: '40px',
-              width: 'auto',
-              display: 'block'
-            }} 
-          />
-        </div>
+              display: 'flex',
+              alignItems: 'center',
+              cursor: 'pointer',
+              flexShrink: 0
+            }}
+          >
+            <img 
+              src={getAssetUrl('/logo-full.png')} 
+              alt="Latmedical International" 
+              style={{
+                height: '42px',
+                width: 'auto',
+                display: 'block'
+              }} 
+            />
+          </div>
 
-        {/* Desktop Navigation - Centered with balanced spacing */}
-        {/* Desktop Navigation - Centered with balanced spacing */}
-        <nav style={{ display: 'none' }} className="desktop-nav">
-          <ul style={{
-            display: 'flex',
-            listStyle: 'none',
-            gap: 'clamp(1.5rem, 2.5vw, 2.5rem)',
-            alignItems: 'center',
-            margin: 0,
-            padding: 0
-          }}>
-            {navLinks.map((link: any) => {
-              const isSubActive = link.submenu && link.submenu.some((sub: any) => sub.id === activeTab);
-              const isItemActive = activeTab === link.id || isSubActive;
+          {/* Desktop Navigation - Connected directly to the logo */}
+          <nav style={{ display: 'none' }} className="desktop-nav">
+            <ul style={{
+              display: 'flex',
+              listStyle: 'none',
+              gap: '1.5rem',
+              alignItems: 'center',
+              margin: 0,
+              padding: 0
+            }}>
+              {navLinks.map((link: any) => {
+                const isSubActive = link.submenu && link.submenu.some((sub: any) => sub.id === activeTab);
+                const isItemActive = activeTab === link.id || isSubActive;
 
-              return (
-                <li key={link.id} className={link.submenu ? "nav-item-dropdown" : ""} style={{ position: 'relative' }}>
-                  {link.submenu ? (
-                    <div style={{ position: 'relative' }}>
+                return (
+                  <li key={link.id} className={link.submenu ? "nav-item-dropdown" : ""} style={{ position: 'relative' }}>
+                    {link.submenu ? (
+                      <div style={{ position: 'relative' }}>
+                        <button
+                          onClick={() => handleNavClick(link.id)}
+                          className="nav-dropdown-trigger"
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            fontFamily: 'var(--font-headings)',
+                            fontSize: '0.88rem',
+                            fontWeight: isItemActive ? 700 : 600,
+                            color: isItemActive ? 'var(--accent-green)' : 'var(--text-medium)',
+                            cursor: 'pointer',
+                            position: 'relative',
+                            padding: '0.6rem 0.2rem',
+                            transition: 'var(--transition-fast)',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.35rem'
+                          }}
+                        >
+                          <span>{link.label}</span>
+                          <ChevronDown size={14} className="nav-chevron-icon" style={{ transition: 'transform 0.2s ease' }} />
+                          {isItemActive && (
+                            <span style={{
+                              position: 'absolute',
+                              bottom: 0,
+                              left: '0',
+                              width: '100%',
+                              height: '2.5px',
+                              background: 'var(--accent-gradient)',
+                              borderRadius: '2px'
+                            }} />
+                          )}
+                        </button>
+
+                        {/* Dropdown Menu Popup */}
+                        <div className="nav-dropdown-menu">
+                          {link.submenu.map((sub: any) => {
+                            const isSubSelected = activeTab === sub.id;
+                            return (
+                              <button
+                                key={sub.id}
+                                className="nav-dropdown-item"
+                                onClick={() => handleNavClick(sub.id)}
+                                style={{
+                                  background: isSubSelected ? 'rgba(41, 192, 147, 0.08)' : 'transparent'
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: sub.desc ? '0.2rem' : 0 }}>
+                                  <span style={{
+                                    fontWeight: isSubSelected ? 700 : 600,
+                                    color: isSubSelected ? 'var(--accent-green)' : 'var(--primary-dark)',
+                                    fontSize: '0.86rem'
+                                  }}>
+                                    {sub.label}
+                                  </span>
+                                  {sub.badge && (
+                                    <span style={{
+                                      fontSize: '0.62rem',
+                                      fontWeight: 800,
+                                      padding: '0.12rem 0.45rem',
+                                      borderRadius: '12px',
+                                      background: sub.badge === 'B2B' ? 'rgba(3, 191, 215, 0.15)' : sub.badge === 'OUTLET' ? 'rgba(234, 88, 12, 0.15)' : 'rgba(41, 192, 147, 0.15)',
+                                      color: sub.badge === 'B2B' ? '#038e9f' : sub.badge === 'OUTLET' ? '#ea580c' : '#15803d',
+                                      letterSpacing: '0.04em'
+                                    }}>
+                                      {sub.badge}
+                                    </span>
+                                  )}
+                                </div>
+                                {sub.desc && (
+                                  <span style={{
+                                    display: 'block',
+                                    fontSize: '0.72rem',
+                                    color: 'var(--text-medium)',
+                                    lineHeight: 1.3,
+                                    fontWeight: 400
+                                  }}>
+                                    {sub.desc}
+                                  </span>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
                       <button
                         onClick={() => handleNavClick(link.id)}
-                        className="nav-dropdown-trigger"
                         style={{
                           background: 'none',
                           border: 'none',
                           fontFamily: 'var(--font-headings)',
                           fontSize: '0.88rem',
-                          fontWeight: isItemActive ? 700 : 600,
-                          color: isItemActive ? 'var(--accent-green)' : 'var(--text-medium)',
+                          fontWeight: activeTab === link.id ? 700 : 600,
+                          color: activeTab === link.id ? 'var(--accent-green)' : 'var(--text-medium)',
                           cursor: 'pointer',
                           position: 'relative',
-                          padding: '0.6rem 0',
+                          padding: '0.6rem 0.2rem',
                           transition: 'var(--transition-fast)',
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '0.35rem'
+                          gap: '0.4rem'
+                        }}
+                        onMouseEnter={e => {
+                          if (activeTab !== link.id) {
+                            e.currentTarget.style.color = 'var(--accent-green)';
+                          }
+                        }}
+                        onMouseLeave={e => {
+                          if (activeTab !== link.id) {
+                            e.currentTarget.style.color = 'var(--text-medium)';
+                          }
                         }}
                       >
                         <span>{link.label}</span>
-                        <ChevronDown size={14} className="nav-chevron-icon" style={{ transition: 'transform 0.2s ease' }} />
-                        {isItemActive && (
+                        {activeTab === link.id && (
                           <span style={{
                             position: 'absolute',
                             bottom: 0,
@@ -198,106 +295,13 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
                           }} />
                         )}
                       </button>
-
-                      {/* Dropdown Menu Popup */}
-                      <div className="nav-dropdown-menu">
-                        {link.submenu.map((sub: any) => {
-                          const isSubSelected = activeTab === sub.id;
-                          return (
-                            <button
-                              key={sub.id}
-                              className="nav-dropdown-item"
-                              onClick={() => handleNavClick(sub.id)}
-                              style={{
-                                background: isSubSelected ? 'rgba(41, 192, 147, 0.08)' : 'transparent'
-                              }}
-                            >
-                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: sub.desc ? '0.2rem' : 0 }}>
-                                <span style={{
-                                  fontWeight: isSubSelected ? 700 : 600,
-                                  color: isSubSelected ? 'var(--accent-green)' : 'var(--primary-dark)',
-                                  fontSize: '0.86rem'
-                                }}>
-                                  {sub.label}
-                                </span>
-                                {sub.badge && (
-                                  <span style={{
-                                    fontSize: '0.62rem',
-                                    fontWeight: 800,
-                                    padding: '0.12rem 0.45rem',
-                                    borderRadius: '12px',
-                                    background: sub.badge === 'B2B' ? 'rgba(3, 191, 215, 0.15)' : sub.badge === 'OUTLET' ? 'rgba(234, 88, 12, 0.15)' : 'rgba(41, 192, 147, 0.15)',
-                                    color: sub.badge === 'B2B' ? '#038e9f' : sub.badge === 'OUTLET' ? '#ea580c' : '#15803d',
-                                    letterSpacing: '0.04em'
-                                  }}>
-                                    {sub.badge}
-                                  </span>
-                                )}
-                              </div>
-                              {sub.desc && (
-                                <span style={{
-                                  display: 'block',
-                                  fontSize: '0.72rem',
-                                  color: 'var(--text-medium)',
-                                  lineHeight: 1.3,
-                                  fontWeight: 400
-                                }}>
-                                  {sub.desc}
-                                </span>
-                              )}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => handleNavClick(link.id)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        fontFamily: 'var(--font-headings)',
-                        fontSize: '0.88rem',
-                        fontWeight: activeTab === link.id ? 700 : 600,
-                        color: activeTab === link.id ? 'var(--accent-green)' : 'var(--text-medium)',
-                        cursor: 'pointer',
-                        position: 'relative',
-                        padding: '0.6rem 0',
-                        transition: 'var(--transition-fast)',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.4rem'
-                      }}
-                      onMouseEnter={e => {
-                        if (activeTab !== link.id) {
-                          e.currentTarget.style.color = 'var(--accent-green)';
-                        }
-                      }}
-                      onMouseLeave={e => {
-                        if (activeTab !== link.id) {
-                          e.currentTarget.style.color = 'var(--text-medium)';
-                        }
-                      }}
-                    >
-                      <span>{link.label}</span>
-                      {activeTab === link.id && (
-                        <span style={{
-                          position: 'absolute',
-                          bottom: 0,
-                          left: '0',
-                          width: '100%',
-                          height: '2.5px',
-                          background: 'var(--accent-gradient)',
-                          borderRadius: '2px'
-                        }} />
-                      )}
-                    </button>
-                  )}
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </nav>
+        </div>
 
         {/* Action Buttons - Aligned to far right */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
