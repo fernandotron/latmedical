@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ShoppingCart, Menu, X, Settings } from 'lucide-react';
+import { ShoppingCart, Menu, X, Settings, ChevronDown } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { getAssetUrl } from '../utils/assets';
@@ -14,6 +14,8 @@ interface HeaderProps {
 interface NavSubmenuItem {
   id: string;
   label: string;
+  desc?: string;
+  badge?: string;
 }
 
 interface NavLinkItem {
@@ -32,24 +34,66 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
 
   const navLinks: NavLinkItem[] = [
     { id: 'home', label: 'Inicio', isExternal: false },
-    { id: 'about', label: 'Nosotros', isExternal: false },
     { 
       id: 'products', 
-      label: 'Productos', 
+      label: 'Productos & Pedidos', 
       isExternal: false,
       submenu: [
-        { id: 'products', label: 'Todos los Productos' },
-        { id: 'quick-order', label: '⚡ Matriz de Pedido Rápido' },
-        { id: 'hilos-pdo', label: 'Hilos PDO (Vlift Pro)' },
-        { id: 'seffiline', label: 'Medicina Regenerativa (Seffiline)' },
-        { id: 'clearance', label: '🏷️ Outlet por Caducidad' }
+        { 
+          id: 'quick-order', 
+          label: '⚡ Pedido Rápido B2B', 
+          desc: 'Matriz masiva por calibres para clínicas y quirófanos',
+          badge: 'B2B'
+        },
+        { 
+          id: 'products', 
+          label: '📦 Catálogo Completo', 
+          desc: 'Dispositivos médicos y equipamiento estético' 
+        },
+        { 
+          id: 'hilos-pdo', 
+          label: '🧵 Hilos PDO (V-Lift Pro)', 
+          desc: 'Mono, Screw, Genesis, Cones, Nose, Eye y Biocánulas' 
+        },
+        { 
+          id: 'seffiline', 
+          label: '🧬 Medicina Regenerativa (Seffiline)', 
+          desc: 'Kits autólogos Seffiller, Seffihair, Sefficare y Seffigyn' 
+        },
+        { 
+          id: 'clearance', 
+          label: '🔥 Oportunidades & Outlet', 
+          desc: 'Lotes especiales con 20% a 60% OFF por caducidad',
+          badge: 'OUTLET'
+        }
       ]
     },
-    { id: 'quick-order', label: 'Pedido Rápido', badge: 'B2B', isExternal: false },
-    { id: 'academia', label: 'Academia & Cursos', badge: 'HANDS-ON', isExternal: false },
-    { id: 'descargas', label: 'Descargas Médicas', badge: 'ANMAT', isExternal: false },
-    { id: 'roi', label: 'Calculadora ROI', badge: 'PRO', isExternal: false },
-    { id: 'clearance', label: 'Oportunidades', badge: 'OUTLET', isExternal: false },
+    { 
+      id: 'academia', 
+      label: 'Área Médica', 
+      isExternal: false,
+      submenu: [
+        { 
+          id: 'academia', 
+          label: '🎓 Academia & Workshops', 
+          desc: 'Masterclasses con práctica hands-on en pacientes reales',
+          badge: 'HANDS-ON'
+        },
+        { 
+          id: 'descargas', 
+          label: '📄 Descargas & Consentimientos', 
+          desc: 'Modelos legales listos para imprimir en A4 y ANMAT',
+          badge: 'ANMAT'
+        },
+        { 
+          id: 'roi', 
+          label: '📊 Calculadora ROI Médica', 
+          desc: 'Simulador de ganancias y retorno por tratamiento',
+          badge: 'PRO'
+        }
+      ]
+    },
+    { id: 'about', label: 'Nosotros', isExternal: false },
     { id: 'contact', label: 'Contacto', isExternal: false },
   ];
 
@@ -103,6 +147,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
         </div>
 
         {/* Desktop Navigation - Centered with balanced spacing */}
+        {/* Desktop Navigation - Centered with balanced spacing */}
         <nav style={{ display: 'none' }} className="desktop-nav">
           <ul style={{
             display: 'flex',
@@ -112,34 +157,100 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
             margin: 0,
             padding: 0
           }}>
-            {navLinks.map((link: any) => (
-              <li key={link.id} className={link.submenu ? "nav-item-dropdown" : ""} style={{ position: 'relative' }}>
-                {link.isExternal ? (
-                  <a
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      fontFamily: 'var(--font-headings)',
-                      fontSize: '0.88rem',
-                      fontWeight: 600,
-                      color: 'var(--text-medium)',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      padding: '0.5rem 0',
-                      textDecoration: 'none',
-                      display: 'inline-block',
-                      transition: 'var(--transition-fast)'
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.color = 'var(--accent-green)'}
-                    onMouseLeave={e => e.currentTarget.style.color = 'var(--text-medium)'}
-                  >
-                    {link.label}
-                  </a>
-                ) : link.submenu ? (
-                  <div style={{ display: 'inline-block' }}>
+            {navLinks.map((link: any) => {
+              const isSubActive = link.submenu && link.submenu.some((sub: any) => sub.id === activeTab);
+              const isItemActive = activeTab === link.id || isSubActive;
+
+              return (
+                <li key={link.id} className={link.submenu ? "nav-item-dropdown" : ""} style={{ position: 'relative' }}>
+                  {link.submenu ? (
+                    <div style={{ position: 'relative' }}>
+                      <button
+                        onClick={() => handleNavClick(link.id)}
+                        className="nav-dropdown-trigger"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          fontFamily: 'var(--font-headings)',
+                          fontSize: '0.88rem',
+                          fontWeight: isItemActive ? 700 : 600,
+                          color: isItemActive ? 'var(--accent-green)' : 'var(--text-medium)',
+                          cursor: 'pointer',
+                          position: 'relative',
+                          padding: '0.6rem 0',
+                          transition: 'var(--transition-fast)',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '0.35rem'
+                        }}
+                      >
+                        <span>{link.label}</span>
+                        <ChevronDown size={14} className="nav-chevron-icon" style={{ transition: 'transform 0.2s ease' }} />
+                        {isItemActive && (
+                          <span style={{
+                            position: 'absolute',
+                            bottom: 0,
+                            left: '0',
+                            width: '100%',
+                            height: '2.5px',
+                            background: 'var(--accent-gradient)',
+                            borderRadius: '2px'
+                          }} />
+                        )}
+                      </button>
+
+                      {/* Dropdown Menu Popup */}
+                      <div className="nav-dropdown-menu">
+                        {link.submenu.map((sub: any) => {
+                          const isSubSelected = activeTab === sub.id;
+                          return (
+                            <button
+                              key={sub.id}
+                              className="nav-dropdown-item"
+                              onClick={() => handleNavClick(sub.id)}
+                              style={{
+                                background: isSubSelected ? 'rgba(41, 192, 147, 0.08)' : 'transparent'
+                              }}
+                            >
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: sub.desc ? '0.2rem' : 0 }}>
+                                <span style={{
+                                  fontWeight: isSubSelected ? 700 : 600,
+                                  color: isSubSelected ? 'var(--accent-green)' : 'var(--primary-dark)',
+                                  fontSize: '0.86rem'
+                                }}>
+                                  {sub.label}
+                                </span>
+                                {sub.badge && (
+                                  <span style={{
+                                    fontSize: '0.62rem',
+                                    fontWeight: 800,
+                                    padding: '0.12rem 0.45rem',
+                                    borderRadius: '12px',
+                                    background: sub.badge === 'B2B' ? 'rgba(3, 191, 215, 0.15)' : sub.badge === 'OUTLET' ? 'rgba(234, 88, 12, 0.15)' : 'rgba(41, 192, 147, 0.15)',
+                                    color: sub.badge === 'B2B' ? '#038e9f' : sub.badge === 'OUTLET' ? '#ea580c' : '#15803d',
+                                    letterSpacing: '0.04em'
+                                  }}>
+                                    {sub.badge}
+                                  </span>
+                                )}
+                              </div>
+                              {sub.desc && (
+                                <span style={{
+                                  display: 'block',
+                                  fontSize: '0.72rem',
+                                  color: 'var(--text-medium)',
+                                  lineHeight: 1.3,
+                                  fontWeight: 400
+                                }}>
+                                  {sub.desc}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
                     <button
                       onClick={() => handleNavClick(link.id)}
                       style={{
@@ -147,19 +258,29 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
                         border: 'none',
                         fontFamily: 'var(--font-headings)',
                         fontSize: '0.88rem',
-                        fontWeight: (activeTab === 'products' || activeTab === 'hilos-pdo' || activeTab === 'seffiline') ? 700 : 600,
-                        color: (activeTab === 'products' || activeTab === 'hilos-pdo' || activeTab === 'seffiline') ? 'var(--accent-green)' : 'var(--text-medium)',
+                        fontWeight: activeTab === link.id ? 700 : 600,
+                        color: activeTab === link.id ? 'var(--accent-green)' : 'var(--text-medium)',
                         cursor: 'pointer',
                         position: 'relative',
-                        padding: '0.5rem 0',
+                        padding: '0.6rem 0',
                         transition: 'var(--transition-fast)',
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
-                        gap: '0.25rem'
+                        gap: '0.4rem'
+                      }}
+                      onMouseEnter={e => {
+                        if (activeTab !== link.id) {
+                          e.currentTarget.style.color = 'var(--accent-green)';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (activeTab !== link.id) {
+                          e.currentTarget.style.color = 'var(--text-medium)';
+                        }
                       }}
                     >
-                      {link.label} <span style={{ fontSize: '0.65rem' }}>▼</span>
-                      {(activeTab === 'products' || activeTab === 'hilos-pdo' || activeTab === 'seffiline') && (
+                      <span>{link.label}</span>
+                      {activeTab === link.id && (
                         <span style={{
                           position: 'absolute',
                           bottom: 0,
@@ -171,77 +292,10 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
                         }} />
                       )}
                     </button>
-                    <div className="nav-dropdown-menu">
-                      {link.submenu.map((sub: any) => (
-                        <button
-                          key={sub.id}
-                          className="nav-dropdown-item"
-                          onClick={() => handleNavClick(sub.id)}
-                        >
-                          {sub.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => handleNavClick(link.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      fontFamily: 'var(--font-headings)',
-                      fontSize: '0.88rem',
-                      fontWeight: activeTab === link.id ? 700 : 600,
-                      color: activeTab === link.id ? (link.id === 'clearance' ? '#ea580c' : 'var(--accent-green)') : 'var(--text-medium)',
-                      cursor: 'pointer',
-                      position: 'relative',
-                      padding: '0.5rem 0',
-                      transition: 'var(--transition-fast)',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '0.4rem'
-                    }}
-                    onMouseEnter={e => {
-                      if (activeTab !== link.id) {
-                        e.currentTarget.style.color = link.id === 'clearance' ? '#ea580c' : 'var(--accent-green)';
-                      }
-                    }}
-                    onMouseLeave={e => {
-                      if (activeTab !== link.id) {
-                        e.currentTarget.style.color = 'var(--text-medium)';
-                      }
-                    }}
-                  >
-                    <span>{link.label}</span>
-                    {link.badge && (
-                      <span style={{
-                        background: 'linear-gradient(135deg, #ea580c 0%, #dc2626 100%)',
-                        color: '#ffffff',
-                        fontSize: '0.62rem',
-                        fontWeight: 800,
-                        padding: '0.12rem 0.45rem',
-                        borderRadius: '20px',
-                        letterSpacing: '0.04em',
-                        boxShadow: '0 2px 6px rgba(234, 88, 12, 0.3)'
-                      }}>
-                        {link.badge}
-                      </span>
-                    )}
-                    {activeTab === link.id && (
-                      <span style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: '0',
-                        width: '100%',
-                        height: '2.5px',
-                        background: link.id === 'clearance' ? 'linear-gradient(135deg, #ea580c 0%, #dc2626 100%)' : 'var(--accent-gradient)',
-                        borderRadius: '2px'
-                      }} />
-                    )}
-                  </button>
-                )}
-              </li>
-            ))}
+                  )}
+                </li>
+              );
+            })}
           </ul>
         </nav>
 
@@ -406,98 +460,90 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
           top: `calc(var(--header-height) + ${isAdminLoggedIn ? '32px' : '0px'})`,
           left: 0,
           width: '100%',
+          maxHeight: 'calc(100vh - var(--header-height))',
+          overflowY: 'auto',
           background: 'var(--bg-white)',
           boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)',
-          padding: '1.5rem 2rem',
+          padding: '1.5rem',
           display: 'flex',
           flexDirection: 'column',
-          gap: '1rem',
+          gap: '0.75rem',
           zIndex: 99,
           animation: 'slideUp 0.3s ease'
         }}>
           {navLinks.map((link) => {
             if (link.submenu) {
+              const isSubActive = link.submenu.some((sub: any) => sub.id === activeTab);
               return (
-                <React.Fragment key={link.id}>
-                  <button
-                    onClick={() => handleNavClick(link.id)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      textAlign: 'left',
-                      padding: '0.8rem 0 0.4rem 0',
-                      fontFamily: 'var(--font-headings)',
-                      fontSize: '1rem',
-                      fontWeight: (activeTab === 'products' || activeTab === 'hilos-pdo' || activeTab === 'seffiline') ? 600 : 500,
-                      color: (activeTab === 'products' || activeTab === 'hilos-pdo' || activeTab === 'seffiline') ? 'var(--accent-green)' : 'var(--text-medium)',
-                      cursor: 'pointer',
-                      width: '100%'
-                    }}
-                  >
+                <div key={link.id} style={{ borderBottom: '1px solid var(--border-light)', paddingBottom: '0.75rem' }}>
+                  <div style={{
+                    padding: '0.4rem 0',
+                    fontFamily: 'var(--font-headings)',
+                    fontSize: '0.85rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    fontWeight: 800,
+                    color: isSubActive ? 'var(--accent-green)' : '#94A3B8'
+                  }}>
                     {link.label}
-                  </button>
-                  {link.submenu.map((sub) => (
-                    <button
-                      key={sub.id}
-                      onClick={() => handleNavClick(sub.id)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        textAlign: 'left',
-                        padding: '0.6rem 0 0.6rem 1.5rem',
-                        fontFamily: 'var(--font-headings)',
-                        fontSize: '0.9rem',
-                        fontWeight: activeTab === sub.id ? 600 : 500,
-                        color: activeTab === sub.id ? 'var(--accent-green)' : 'var(--text-medium)',
-                        borderBottom: '1px solid rgba(0, 0, 0, 0.03)',
-                        cursor: 'pointer',
-                        width: '100%'
-                      }}
-                    >
-                      ↳ {sub.label}
-                    </button>
-                  ))}
-                </React.Fragment>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', marginTop: '0.25rem' }}>
+                    {link.submenu.map((sub) => {
+                      const isSelected = activeTab === sub.id;
+                      return (
+                        <button
+                          key={sub.id}
+                          onClick={() => handleNavClick(sub.id)}
+                          style={{
+                            background: isSelected ? 'rgba(41, 192, 147, 0.08)' : 'none',
+                            border: 'none',
+                            textAlign: 'left',
+                            padding: '0.6rem 0.75rem',
+                            borderRadius: '8px',
+                            fontFamily: 'var(--font-headings)',
+                            fontSize: '0.92rem',
+                            fontWeight: isSelected ? 700 : 500,
+                            color: isSelected ? 'var(--accent-green)' : 'var(--text-dark)',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between'
+                          }}
+                        >
+                          <span>{sub.label}</span>
+                          {sub.badge && (
+                            <span style={{
+                              fontSize: '0.62rem',
+                              fontWeight: 800,
+                              padding: '0.1rem 0.4rem',
+                              borderRadius: '10px',
+                              background: sub.badge === 'B2B' ? 'rgba(3, 191, 215, 0.15)' : sub.badge === 'OUTLET' ? 'rgba(234, 88, 12, 0.15)' : 'rgba(41, 192, 147, 0.15)',
+                              color: sub.badge === 'B2B' ? '#038e9f' : sub.badge === 'OUTLET' ? '#ea580c' : '#15803d'
+                            }}>
+                              {sub.badge}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               );
             }
-            return link.isExternal ? (
-              <a
-                key={link.id}
-                href={link.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => setMobileMenuOpen(false)}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  textAlign: 'left',
-                  padding: '0.8rem 0',
-                  fontFamily: 'var(--font-headings)',
-                  fontSize: '1rem',
-                  fontWeight: 500,
-                  color: 'var(--text-medium)',
-                  textDecoration: 'none',
-                  borderBottom: '1px solid var(--border-light)',
-                  cursor: 'pointer',
-                  width: '100%',
-                  display: 'block'
-                }}
-              >
-                {link.label}
-              </a>
-            ) : (
+            return (
               <button
                 key={link.id}
                 onClick={() => handleNavClick(link.id)}
                 style={{
-                  background: 'none',
+                  background: activeTab === link.id ? 'rgba(41, 192, 147, 0.08)' : 'none',
                   border: 'none',
                   textAlign: 'left',
-                  padding: '0.8rem 0',
+                  padding: '0.75rem',
+                  borderRadius: '8px',
                   fontFamily: 'var(--font-headings)',
-                  fontSize: '1rem',
-                  fontWeight: activeTab === link.id ? 600 : 500,
-                  color: activeTab === link.id ? 'var(--accent-green)' : 'var(--text-medium)',
+                  fontSize: '0.95rem',
+                  fontWeight: activeTab === link.id ? 700 : 600,
+                  color: activeTab === link.id ? 'var(--accent-green)' : 'var(--text-dark)',
                   borderBottom: '1px solid var(--border-light)',
                   cursor: 'pointer',
                   width: '100%'
@@ -512,7 +558,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
             onClick={() => handleNavClick('products')}
             style={{
               justifyContent: 'center',
-              marginTop: '0.5rem'
+              marginTop: '0.75rem',
+              padding: '0.8rem'
             }}
           >
             Comprar Ahora
@@ -522,7 +569,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
 
       {/* Style overrides for Responsive Header Layout & Submenu */}
       <style>{`
-        @media (min-width: 768px) {
+        @media (min-width: 860px) {
           .desktop-nav {
             display: block !important;
           }
@@ -536,49 +583,54 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
 
         /* Hover Submenu CSS styles */
         .nav-item-dropdown:hover .nav-dropdown-menu {
-          display: block;
-          animation: fadeInMenu 0.25s ease;
+          display: flex;
+          animation: fadeInMenu 0.2s ease forwards;
+        }
+
+        .nav-item-dropdown:hover .nav-chevron-icon {
+          transform: rotate(180deg);
         }
 
         .nav-dropdown-menu {
           display: none;
+          flex-direction: column;
           position: absolute;
           top: 100%;
           left: 50%;
           transform: translateX(-50%);
           background: #ffffff;
-          box-shadow: 0 10px 30px rgba(0,0,0,0.08);
-          border-radius: 8px;
-          padding: 0.5rem 0;
-          min-width: 250px;
+          box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(226, 232, 240, 0.8);
+          border-radius: 14px;
+          padding: 0.5rem;
+          min-width: 320px;
           z-index: 1000;
-          border: 1px solid var(--border-light);
+          gap: 0.25rem;
         }
 
         .nav-dropdown-item {
-          display: block;
+          display: flex;
+          flex-direction: column;
+          align-items: flex-start;
           width: 100%;
           text-align: left;
-          background: none;
+          background: transparent;
           border: none;
-          padding: 0.7rem 1.25rem;
-          font-size: 0.85rem;
-          font-weight: 500;
-          color: var(--text-medium);
+          padding: 0.65rem 0.85rem;
+          border-radius: 8px;
           cursor: pointer;
           font-family: var(--font-headings);
-          transition: background 0.2s ease, color 0.2s ease;
+          transition: background 0.15s ease, transform 0.15s ease;
         }
 
         .nav-dropdown-item:hover {
-          background: var(--accent-green-light);
-          color: var(--accent-green);
+          background: #F8FAFC !important;
+          transform: translateX(3px);
         }
 
         @keyframes fadeInMenu {
           from {
             opacity: 0;
-            transform: translate(-50%, 8px);
+            transform: translate(-50%, 6px);
           }
           to {
             opacity: 1;
