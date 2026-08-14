@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Product } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useInventory } from '../context/InventoryContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { Check, Eye } from 'lucide-react';
 import { getAssetUrl } from '../utils/assets';
 
@@ -13,6 +14,7 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails }) => {
   const { addToCart } = useCart();
   const { inventory } = useInventory();
+  const { formatPrice } = useCurrency();
   const [qty, setQty] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -66,6 +68,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
         <img 
           src={getAssetUrl(product.image)} 
           alt={product.name} 
+          onError={(e) => {
+            const target = e.currentTarget;
+            if (!target.dataset.triedFallback) {
+              target.dataset.triedFallback = 'true';
+              target.src = getAssetUrl('/images/products/mono.png');
+            }
+          }}
           style={{
             maxWidth: '100%',
             maxHeight: '100%',
@@ -171,7 +180,20 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
               padding: '0.15rem 0.5rem',
               borderRadius: '4px'
             }}>
-              USD ${product.price.toFixed(2)}
+              {(() => {
+                if (inv && inv.hasVariants && inv.variants && inv.variants.length > 0) {
+                  const prices = inv.variants.map(v => v.price !== undefined ? v.price : product.price).filter(p => !isNaN(p));
+                  if (prices.length > 0) {
+                    const minP = Math.min(...prices);
+                    const maxP = Math.max(...prices);
+                    if (minP !== maxP) {
+                      return `Desde ${formatPrice(minP)}`;
+                    }
+                    return formatPrice(minP);
+                  }
+                }
+                return formatPrice(product.price || 0);
+              })()}
             </span>
           </div>
 

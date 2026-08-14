@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShoppingCart, Menu, X, Settings } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { getAssetUrl } from '../utils/assets';
 
 interface HeaderProps {
@@ -10,11 +11,26 @@ interface HeaderProps {
   isAdminLoggedIn?: boolean;
 }
 
+interface NavSubmenuItem {
+  id: string;
+  label: string;
+}
+
+interface NavLinkItem {
+  id: string;
+  label: string;
+  isExternal: boolean;
+  url?: string;
+  badge?: string;
+  submenu?: NavSubmenuItem[];
+}
+
 export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleCart, isAdminLoggedIn = false }) => {
   const { cartCount } = useCart();
+  const { currency, setCurrency, exchangeRate } = useCurrency();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const navLinks = [
+  const navLinks: NavLinkItem[] = [
     { id: 'home', label: 'Inicio', isExternal: false },
     { id: 'about', label: 'Nosotros', isExternal: false },
     { 
@@ -23,11 +39,17 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
       isExternal: false,
       submenu: [
         { id: 'products', label: 'Todos los Productos' },
+        { id: 'quick-order', label: '⚡ Matriz de Pedido Rápido' },
         { id: 'hilos-pdo', label: 'Hilos PDO (Vlift Pro)' },
-        { id: 'seffiline', label: 'Medicina Regenerativa (Seffiline)' }
+        { id: 'seffiline', label: 'Medicina Regenerativa (Seffiline)' },
+        { id: 'clearance', label: '🏷️ Outlet por Caducidad' }
       ]
     },
-    { id: 'curso', label: 'Curso Internacional', isExternal: true, url: 'https://international.acadelift.org/' },
+    { id: 'quick-order', label: 'Pedido Rápido', badge: 'B2B', isExternal: false },
+    { id: 'academia', label: 'Academia & Cursos', badge: 'HANDS-ON', isExternal: false },
+    { id: 'descargas', label: 'Descargas Médicas', badge: 'ANMAT', isExternal: false },
+    { id: 'roi', label: 'Calculadora ROI', badge: 'PRO', isExternal: false },
+    { id: 'clearance', label: 'Oportunidades', badge: 'OUTLET', isExternal: false },
     { id: 'contact', label: 'Contacto', isExternal: false },
   ];
 
@@ -47,45 +69,50 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
       zIndex: 100,
       display: 'flex',
       alignItems: 'center',
-      transition: 'var(--transition-fast)'
+      transition: 'var(--transition-fast)',
+      background: 'rgba(255, 255, 255, 0.95)',
+      backdropFilter: 'blur(12px)',
+      borderBottom: '1px solid rgba(0, 0, 0, 0.07)'
     }}>
-      <div className="container" style={{
+      <div style={{
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center',
-        width: '100%'
+        width: '100%',
+        padding: '0 clamp(1.25rem, 3.5vw, 3.5rem)'
       }}>
-        {/* Brand Logo */}
+        {/* Brand Logo - Aligned to far left */}
         <div 
           onClick={() => handleNavClick('home')}
           style={{
             display: 'flex',
             alignItems: 'center',
-            cursor: 'pointer'
+            cursor: 'pointer',
+            flexShrink: 0
           }}
         >
           <img 
             src={getAssetUrl('/logo-full.png')} 
             alt="Latmedical International" 
             style={{
-              height: '42px',
+              height: '40px',
               width: 'auto',
               display: 'block'
             }} 
           />
         </div>
 
-        {/* Desktop Navigation */}
+        {/* Desktop Navigation - Centered with balanced spacing */}
         <nav style={{ display: 'none' }} className="desktop-nav">
           <ul style={{
             display: 'flex',
             listStyle: 'none',
-            gap: '2.5rem',
+            gap: 'clamp(1.5rem, 2.5vw, 2.5rem)',
             alignItems: 'center',
             margin: 0,
             padding: 0
           }}>
-            {navLinks.map((link) => (
+            {navLinks.map((link: any) => (
               <li key={link.id} className={link.submenu ? "nav-item-dropdown" : ""} style={{ position: 'relative' }}>
                 {link.isExternal ? (
                   <a
@@ -96,8 +123,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
                       background: 'none',
                       border: 'none',
                       fontFamily: 'var(--font-headings)',
-                      fontSize: '0.9rem',
-                      fontWeight: 500,
+                      fontSize: '0.88rem',
+                      fontWeight: 600,
                       color: 'var(--text-medium)',
                       cursor: 'pointer',
                       position: 'relative',
@@ -119,8 +146,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
                         background: 'none',
                         border: 'none',
                         fontFamily: 'var(--font-headings)',
-                        fontSize: '0.9rem',
-                        fontWeight: (activeTab === 'products' || activeTab === 'hilos-pdo' || activeTab === 'seffiline') ? 600 : 500,
+                        fontSize: '0.88rem',
+                        fontWeight: (activeTab === 'products' || activeTab === 'hilos-pdo' || activeTab === 'seffiline') ? 700 : 600,
                         color: (activeTab === 'products' || activeTab === 'hilos-pdo' || activeTab === 'seffiline') ? 'var(--accent-green)' : 'var(--text-medium)',
                         cursor: 'pointer',
                         position: 'relative',
@@ -128,7 +155,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
                         transition: 'var(--transition-fast)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '0.2rem'
+                        gap: '0.25rem'
                       }}
                     >
                       {link.label} <span style={{ fontSize: '0.65rem' }}>▼</span>
@@ -136,16 +163,16 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
                         <span style={{
                           position: 'absolute',
                           bottom: 0,
-                          left: '10%',
-                          width: '80%',
-                          height: '3px',
+                          left: '0',
+                          width: '100%',
+                          height: '2.5px',
                           background: 'var(--accent-gradient)',
                           borderRadius: '2px'
                         }} />
                       )}
                     </button>
                     <div className="nav-dropdown-menu">
-                      {link.submenu.map((sub) => (
+                      {link.submenu.map((sub: any) => (
                         <button
                           key={sub.id}
                           className="nav-dropdown-item"
@@ -163,24 +190,51 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
                       background: 'none',
                       border: 'none',
                       fontFamily: 'var(--font-headings)',
-                      fontSize: '0.9rem',
-                      fontWeight: activeTab === link.id ? 600 : 500,
-                      color: activeTab === link.id ? 'var(--accent-green)' : 'var(--text-medium)',
+                      fontSize: '0.88rem',
+                      fontWeight: activeTab === link.id ? 700 : 600,
+                      color: activeTab === link.id ? (link.id === 'clearance' ? '#ea580c' : 'var(--accent-green)') : 'var(--text-medium)',
                       cursor: 'pointer',
                       position: 'relative',
                       padding: '0.5rem 0',
-                      transition: 'var(--transition-fast)'
+                      transition: 'var(--transition-fast)',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.4rem'
+                    }}
+                    onMouseEnter={e => {
+                      if (activeTab !== link.id) {
+                        e.currentTarget.style.color = link.id === 'clearance' ? '#ea580c' : 'var(--accent-green)';
+                      }
+                    }}
+                    onMouseLeave={e => {
+                      if (activeTab !== link.id) {
+                        e.currentTarget.style.color = 'var(--text-medium)';
+                      }
                     }}
                   >
-                    {link.label}
+                    <span>{link.label}</span>
+                    {link.badge && (
+                      <span style={{
+                        background: 'linear-gradient(135deg, #ea580c 0%, #dc2626 100%)',
+                        color: '#ffffff',
+                        fontSize: '0.62rem',
+                        fontWeight: 800,
+                        padding: '0.12rem 0.45rem',
+                        borderRadius: '20px',
+                        letterSpacing: '0.04em',
+                        boxShadow: '0 2px 6px rgba(234, 88, 12, 0.3)'
+                      }}>
+                        {link.badge}
+                      </span>
+                    )}
                     {activeTab === link.id && (
                       <span style={{
                         position: 'absolute',
                         bottom: 0,
-                        left: '10%',
-                        width: '80%',
-                        height: '3px',
-                        background: 'var(--accent-gradient)',
+                        left: '0',
+                        width: '100%',
+                        height: '2.5px',
+                        background: link.id === 'clearance' ? 'linear-gradient(135deg, #ea580c 0%, #dc2626 100%)' : 'var(--accent-gradient)',
                         borderRadius: '2px'
                       }} />
                     )}
@@ -191,8 +245,56 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
           </ul>
         </nav>
 
-        {/* Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem' }}>
+        {/* Action Buttons - Aligned to far right */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
+          {/* Currency Switcher (USD / ARS) */}
+          <div 
+            title={`Moneda de cotización activa (Tipo de Cambio: $1 USD = $${exchangeRate.toLocaleString('es-AR')} ARS)`}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              background: '#F1F5F9',
+              borderRadius: '20px',
+              padding: '2px',
+              border: '1px solid var(--border-light)'
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setCurrency('USD')}
+              style={{
+                padding: '0.3rem 0.6rem',
+                borderRadius: '16px',
+                border: 'none',
+                background: currency === 'USD' ? 'var(--primary-dark)' : 'transparent',
+                color: currency === 'USD' ? '#FFFFFF' : 'var(--text-medium)',
+                fontWeight: 700,
+                fontSize: '0.72rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              USD $
+            </button>
+            <button
+              type="button"
+              onClick={() => setCurrency('ARS')}
+              style={{
+                padding: '0.3rem 0.6rem',
+                borderRadius: '16px',
+                border: 'none',
+                background: currency === 'ARS' ? 'var(--accent-green)' : 'transparent',
+                color: currency === 'ARS' ? '#FFFFFF' : 'var(--text-medium)',
+                fontWeight: 700,
+                fontSize: '0.72rem',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              ARS $
+            </button>
+          </div>
+
           {/* Cart Trigger */}
           <button
             onClick={toggleCart}
@@ -208,7 +310,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
               justifyContent: 'center',
               color: 'var(--primary-dark)',
               transition: 'var(--transition-fast)',
-              boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.05)'
+              boxShadow: '0 0 0 1px rgba(0, 0, 0, 0.06)'
             }}
             title="Ver carrito de compras"
             onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--accent-green-light)'}
@@ -262,14 +364,16 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
             </button>
           )}
 
-          {/* Contact CTA Button (Desktop) */}
+          {/* Contact / Catalog CTA Button (Desktop) */}
           <button
             className="btn-primary"
             onClick={() => handleNavClick('products')}
             style={{
-              padding: '0.5rem 1.2rem',
+              padding: '0.6rem 1.4rem',
               fontSize: '0.85rem',
-              display: 'none'
+              fontWeight: 700,
+              display: 'none',
+              borderRadius: '8px'
             }}
             id="cta-header-contact"
           >

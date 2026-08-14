@@ -552,147 +552,128 @@ export const About: React.FC = () => {
             Nuestros productos y metodologías están respaldados por las sociedades y comités científicos oficiales en Europa.
           </p>
 
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            gap: '1.25rem',
-            flexWrap: 'wrap'
-          }}>
+          <div className="partner-grid">
             <a 
               href="https://vliftpro.org" 
               target="_blank" 
               rel="noreferrer" 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textDecoration: 'none',
-                border: '1px solid var(--border-light)',
-                padding: '1rem 1.25rem',
-                borderRadius: '16px',
-                transition: 'var(--transition-fast)',
-                background: '#ffffff',
-                boxShadow: 'var(--shadow-sm)',
-                flex: '1 1 170px',
-                maxWidth: '220px',
-                minWidth: '150px',
-                height: '115px'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-green)'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              className="partner-card"
             >
-              <img src={getAssetUrl('/images/logos/vliftpro-part.png')} alt="Vlift Pro" style={{ maxHeight: '85px', maxWidth: '100%', width: 'auto', display: 'block', objectFit: 'contain' }} />
+              <img 
+                src={getAssetUrl('/images/logos/vliftpro-part.png')} 
+                alt="Vlift Pro" 
+                className="partner-logo" 
+              />
             </a>
 
             <a 
               href="https://marenostrum-med.com" 
               target="_blank" 
               rel="noreferrer" 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textDecoration: 'none',
-                border: '1px solid var(--border-light)',
-                padding: '1rem 1.25rem',
-                borderRadius: '16px',
-                transition: 'var(--transition-fast)',
-                background: '#ffffff',
-                boxShadow: 'var(--shadow-sm)',
-                flex: '1 1 170px',
-                maxWidth: '220px',
-                minWidth: '150px',
-                height: '115px'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-green)'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              className="partner-card"
             >
-              <img src={getAssetUrl('/images/logos/marenosturm-med.png')} alt="Marenostrum Devices" style={{ maxHeight: '95px', maxWidth: '95%', width: 'auto', display: 'block', objectFit: 'contain', transform: 'scale(1.2)' }} />
+              <img 
+                src={getAssetUrl('/images/logos/marenosturm-med.png')} 
+                alt="Marenostrum Devices" 
+                className="partner-logo" 
+                style={{ transform: 'scale(1.1)' }} 
+              />
             </a>
 
             <a 
               href="https://www.instagram.com/seffiline_sp/" 
               target="_blank" 
               rel="noreferrer" 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textDecoration: 'none',
-                border: '1px solid var(--border-light)',
-                padding: '1rem 1.25rem',
-                borderRadius: '16px',
-                transition: 'var(--transition-fast)',
-                background: '#ffffff',
-                boxShadow: 'var(--shadow-sm)',
-                flex: '1 1 170px',
-                maxWidth: '220px',
-                minWidth: '150px',
-                height: '115px'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-green)'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              className="partner-card"
             >
-              <img src={getAssetUrl('/images/logos/seffiline_sp.png')} alt="Seffiline Terapia" style={{ maxHeight: '95px', maxWidth: '95%', width: 'auto', display: 'block', objectFit: 'contain', transform: 'scale(1.2)' }} />
+              <img 
+                src={getAssetUrl('/images/logos/seffiline_sp.png')} 
+                alt="Seffiline Terapia" 
+                className="partner-logo" 
+                style={{ transform: 'scale(1.15)' }} 
+              />
             </a>
 
             <a 
               href="https://acadelift.org/" 
               target="_blank" 
               rel="noreferrer" 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textDecoration: 'none',
-                border: '1px solid var(--border-light)',
-                padding: '1rem 1.25rem',
-                borderRadius: '16px',
-                transition: 'var(--transition-fast)',
-                background: '#ffffff',
-                boxShadow: 'var(--shadow-sm)',
-                flex: '1 1 170px',
-                maxWidth: '220px',
-                minWidth: '150px',
-                height: '115px'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-green)'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              className="partner-card"
             >
-              <img src={getAssetUrl('/images/logos/acadelift.png')} alt="Acadelift" style={{ maxHeight: '70px', maxWidth: '88%', width: 'auto', display: 'block', objectFit: 'contain' }} />
+              <img 
+                src={getAssetUrl('/images/logos/acadelift.png')} 
+                alt="Acadelift" 
+                className="partner-logo" 
+                style={{ transform: 'scale(1.25)' }} 
+              />
             </a>
 
             <a 
               href="https://academy.seffiline.com/" 
               target="_blank" 
               rel="noreferrer" 
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                textDecoration: 'none',
-                border: '1px solid var(--border-light)',
-                padding: '1rem 1.25rem',
-                borderRadius: '16px',
-                transition: 'var(--transition-fast)',
-                background: '#ffffff',
-                boxShadow: 'var(--shadow-sm)',
-                flex: '1 1 170px',
-                maxWidth: '220px',
-                minWidth: '150px',
-                height: '115px'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--accent-green)'; e.currentTarget.style.transform = 'translateY(-4px)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--border-light)'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              className="partner-card"
             >
-              <img src={getAssetUrl('/images/logos/seffiline-academy.png')} alt="Seffiline Academy" style={{ maxHeight: '85px', maxWidth: '100%', width: 'auto', display: 'block', objectFit: 'contain' }} />
+              <img 
+                src={getAssetUrl('/images/logos/seffiline-academy.png')} 
+                alt="Seffiline Academy" 
+                className="partner-logo" 
+              />
             </a>
           </div>
         </div>
       </section>
 
       <style>{`
+        .partner-grid {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 1.5rem;
+          flex-wrap: wrap;
+          margin-top: 1.5rem;
+        }
+
+        .partner-card {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          text-decoration: none;
+          border: 1px solid var(--border-light);
+          padding: 1.25rem 1.5rem;
+          border-radius: 16px;
+          background: #ffffff;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+          flex: 1 1 170px;
+          max-width: 220px;
+          min-width: 150px;
+          height: 110px;
+          transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .partner-card:hover {
+          border-color: rgba(0, 0, 0, 0.15);
+          transform: translateY(-5px);
+          box-shadow: 0 12px 24px rgba(0, 0, 0, 0.06);
+        }
+
+        .partner-logo {
+          max-height: 48px;
+          max-width: 82%;
+          width: auto;
+          height: auto;
+          display: block;
+          object-fit: contain;
+          filter: grayscale(100%) contrast(0.85);
+          opacity: 0.5;
+          transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .partner-card:hover .partner-logo {
+          filter: grayscale(0%) contrast(1);
+          opacity: 0.95;
+        }
+
         @media (min-width: 992px) {
           .about-grid-marenostrum {
             grid-template-columns: 0.95fr 1.05fr !important;

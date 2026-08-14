@@ -23,12 +23,36 @@ export default defineConfig({
               filename = 'src/data/products.json';
             } else if (req.url === '/api/save-inventory') {
               filename = 'src/data/inventory.json';
+            } else if (req.url === '/api/save-clearance') {
+              filename = 'src/data/clearance.json';
             } else if (req.url === '/api/save-settings') {
               filename = 'src/data/general_settings.json';
             } else if (req.url === '/api/save-slides') {
               filename = 'src/data/home_slides.json';
-            } else if (req.url === '/api/save-orders') {
-              filename = 'src/data/orders.json';
+            }
+
+            if (req.url === '/api/save-orders') {
+              let body = '';
+              req.on('data', chunk => { body += chunk; });
+              req.on('end', () => {
+                try {
+                  const targetPathSrc = path.resolve('src/data/orders.json');
+                  const targetPathPublic = path.resolve('public/api/data/orders.json');
+                  
+                  const dir = path.dirname(targetPathPublic);
+                  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
+                  fs.writeFileSync(targetPathSrc, body, 'utf-8');
+                  fs.writeFileSync(targetPathPublic, body, 'utf-8');
+
+                  res.writeHead(200, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ success: true }));
+                } catch (error: any) {
+                  res.writeHead(500, { 'Content-Type': 'application/json' });
+                  res.end(JSON.stringify({ success: false, error: error.message }));
+                }
+              });
+              return;
             }
 
             if (filename) {
@@ -57,6 +81,10 @@ export default defineConfig({
                   const subFile = 'public/api/data/form_submissions.json';
                   const targetPath = path.resolve(subFile);
                   
+                  // Ensure parent dir exists
+                  const dir = path.dirname(targetPath);
+                  if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+
                   let existing = [];
                   if (fs.existsSync(targetPath)) {
                     const content = fs.readFileSync(targetPath, 'utf-8');
@@ -65,11 +93,12 @@ export default defineConfig({
                     }
                   }
                   
-                  existing.push({
-                    id: 'sub-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
-                    date: new Date().toLocaleString('es-AR'),
+                  const item = {
+                    id: newSubmission.id || ('sub-' + Date.now() + '-' + Math.floor(Math.random() * 1000)),
+                    date: newSubmission.date || new Date().toLocaleString('es-AR'),
                     ...newSubmission
-                  });
+                  };
+                  existing.push(item);
                   
                   fs.writeFileSync(targetPath, JSON.stringify(existing, null, 2), 'utf-8');
                   res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -109,6 +138,20 @@ export default defineConfig({
                   res.end(JSON.stringify({ success: false, error: error.message }));
                 }
               });
+              return;
+            }
+          } else if (req.method === 'GET') {
+            if (req.url && req.url.startsWith('/api/data/')) {
+              const fileName = req.url.replace('/api/data/', '');
+              const targetPath = path.resolve('public/api/data', fileName);
+              if (fs.existsSync(targetPath)) {
+                const content = fs.readFileSync(targetPath, 'utf-8');
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(content || JSON.stringify([]));
+              } else {
+                res.writeHead(200, { 'Content-Type': 'application/json' });
+                res.end(JSON.stringify([]));
+              }
               return;
             }
           }

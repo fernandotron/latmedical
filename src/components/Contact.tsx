@@ -13,28 +13,49 @@ export const Contact: React.FC = () => {
 
   const [submitted, setSubmitted] = useState(false);
 
+  const [lastSubmission, setLastSubmission] = useState<{ name: string; message: string } | null>(null);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Save contact submission locally
+    const submissionData = {
+      id: 'sub-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      date: new Date().toLocaleString('es-AR'),
+      type: 'Contacto Web',
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      phone: formData.phone.trim(),
+      country: formData.specialty.trim(),
+      message: formData.message.trim()
+    };
+
+    // Backup in localStorage
+    try {
+      const saved = localStorage.getItem('latmedical_submissions');
+      const existing = saved ? JSON.parse(saved) : [];
+      existing.push(submissionData);
+      localStorage.setItem('latmedical_submissions', JSON.stringify(existing));
+    } catch (err) {
+      console.error('Error saving submission to localStorage:', err);
+    }
+    
+    // Save contact submission on server
     fetch('/api/save-submissions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'Contacto Web',
-        name: formData.name.trim(),
-        email: formData.email.trim(),
-        phone: formData.phone.trim(),
-        country: formData.specialty.trim(),
-        message: formData.message.trim()
+      body: JSON.stringify(submissionData)
+    })
+      .then(res => {
+        if (!res.ok) console.warn('Servidor respondió con estado no OK al guardar formulario:', res.status);
       })
-    }).catch(err => console.error('Error saving contact submission:', err));
+      .catch(err => console.error('Error saving contact submission:', err));
 
+    setLastSubmission({ name: formData.name.trim(), message: formData.message.trim() });
     setSubmitted(true);
     setTimeout(() => {
       setSubmitted(false);
       setFormData({ name: '', email: '', phone: '', specialty: '', message: '' });
-    }, 3000);
+    }, 8000);
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -247,10 +268,32 @@ export const Contact: React.FC = () => {
                 color: 'var(--success)'
               }}>
                 <Send size={32} style={{ marginBottom: '1rem', transform: 'rotate(-45deg)' }} />
-                <h4 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>¡Consulta Enviada!</h4>
-                <p style={{ fontSize: '0.85rem', color: 'var(--text-medium)' }}>
-                  Tu mensaje ha sido recibido con éxito. Un asesor se pondrá en contacto contigo a la brevedad.
+                <h4 style={{ fontWeight: 700, fontSize: '1.1rem', marginBottom: '0.5rem' }}>¡Consulta Enviada con Éxito!</h4>
+                <p style={{ fontSize: '0.85rem', color: 'var(--text-medium)', marginBottom: '1.25rem' }}>
+                  Tu mensaje ha sido registrado en nuestro sistema y notificado a nuestros asesores.
                 </p>
+                {lastSubmission && (
+                  <a
+                    href={`https://wa.me/5491154577210?text=${encodeURIComponent(`Hola Latmedical, acabo de enviar una consulta desde la web. Mi nombre es ${lastSubmission.name}. Consulta: ${lastSubmission.message}`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      background: '#25D366',
+                      color: '#ffffff',
+                      padding: '0.6rem 1.2rem',
+                      borderRadius: '6px',
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                      textDecoration: 'none',
+                      boxShadow: 'var(--shadow-sm)'
+                    }}
+                  >
+                    💬 Contactar también por WhatsApp
+                  </a>
+                )}
               </div>
             ) : (
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>

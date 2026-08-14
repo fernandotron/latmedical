@@ -1,6 +1,24 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import defaultInventoryData from '../data/inventory.json';
 import defaultOrdersData from '../data/orders.json';
+import defaultClearanceData from '../data/clearance.json';
+
+export interface ClearanceOffer {
+  id: string;
+  productId: string;
+  variantId?: string;
+  variantName?: string;
+  productName: string;
+  brand: string;
+  image: string;
+  regularPrice: number;
+  clearancePrice: number;
+  stock: number;
+  expiryDate: string; // e.g., "Octubre 2026"
+  batchNumber?: string; // e.g., "LOTE-202610"
+  note?: string;
+  active: boolean;
+}
 
 export interface OrderItem {
   productId: string;
@@ -9,6 +27,10 @@ export interface OrderItem {
   variantName?: string;
   quantity: number;
   price: number;
+  isClearance?: boolean;
+  clearanceId?: string;
+  expiryDate?: string;
+  batchNumber?: string;
 }
 
 export interface Order {
@@ -34,6 +56,7 @@ export interface VariantStock {
   id: string;
   name: string; // e.g., "30G x 25mm"
   stock: number;
+  price?: number;
 }
 
 export interface ProductInventory {
@@ -46,11 +69,16 @@ export interface ProductInventory {
 interface InventoryContextType {
   inventory: ProductInventory[];
   orders: Order[];
-  updateStock: (productId: string, variantId: string | undefined, newStock: number) => void;
+  clearanceOffers: ClearanceOffer[];
+  updateStock: (productId: string, variantId: string | undefined, newStock: number, newPrice?: number) => void;
   decrementStockForOrder: (items: OrderItem[]) => void;
   addOrder: (order: Omit<Order, 'id' | 'date' | 'status'>) => Order;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   deleteOrder: (orderId: string) => void;
+  addClearanceOffer: (offer: Omit<ClearanceOffer, 'id'>) => ClearanceOffer;
+  updateClearanceOffer: (id: string, updated: Partial<ClearanceOffer>) => void;
+  deleteClearanceOffer: (id: string) => void;
+  toggleClearanceOffer: (id: string) => void;
 }
 
 const InventoryContext = createContext<InventoryContextType | undefined>(undefined);
@@ -75,6 +103,35 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return saved ? JSON.parse(saved) : defaultOrders;
   });
 
+  // Sync orders from server on mount so admin sees orders placed on all devices
+  useEffect(() => {
+    fetch(`/api/data/orders.json?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setOrders((prevOrders) => {
+            const map = new Map<string, Order>();
+            prevOrders.forEach((o) => {
+              if (o && o.id) map.set(o.id, o);
+            });
+            data.forEach((o: any) => {
+              if (o && o.id) map.set(o.id, o);
+            });
+            const merged = Array.from(map.values());
+            localStorage.setItem('latmedical_orders', JSON.stringify(merged));
+            return merged;
+          });
+        }
+      })
+      .catch((err) => console.error('Error syncing remote orders:', err));
+  }, []);
+
   useEffect(() => {
     localStorage.setItem('latmedical_inventory', JSON.stringify(inventory));
     fetch('/api/save-inventory', {
@@ -93,7 +150,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     }).catch(err => console.error('Error saving orders locally:', err));
   }, [orders]);
 
-  const updateStock = (productId: string, variantId: string | undefined, newStock: number) => {
+  const updateStock = (productId: string, variantId: string | undefined, newStock: number, newPrice?: number) => {
     setInventory((prevInv) =>
       prevInv.map((item) => {
         if (item.productId !== productId) return item;
@@ -101,7 +158,13 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
           return {
             ...item,
             variants: item.variants.map((v) =>
-              v.id === variantId ? { ...v, stock: Math.max(0, newStock) } : v
+              v.id === variantId
+                ? {
+                    ...v,
+                    stock: Math.max(0, newStock),
+                    ...(newPrice !== undefined ? { price: Math.max(0, newPrice) } : {})
+                  }
+                : v
             )
           };
         } else {
@@ -111,10 +174,83 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     );
   };
 
+  const [clearanceOffers, setClearanceOffers] = useState<ClearanceOffer[]>(() => {
+    const saved = localStorage.getItem('latmedical_clearance');
+    return saved ? JSON.parse(saved) : (defaultClearanceData as ClearanceOffer[]);
+  });
+
+  // Sync clearance from server on mount with intelligent two-way merge
+  useEffect(() => {
+    fetch(`/api/data/clearance.json?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    })
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then((remoteData) => {
+        if (Array.isArray(remoteData) && remoteData.length > 0) {
+          setClearanceOffers((prevLocal) => {
+            const map = new Map<string, ClearanceOffer>();
+            // 1. Keep all existing items in browser
+            prevLocal.forEach((item) => {
+              if (item && item.id) map.set(item.id, item);
+            });
+            // 2. Merge server items if any are missing
+            remoteData.forEach((item: any) => {
+              if (item && item.id && !map.has(item.id)) {
+                map.set(item.id, item);
+              }
+            });
+            const merged = Array.from(map.values());
+            localStorage.setItem('latmedical_clearance', JSON.stringify(merged));
+            return merged;
+          });
+        }
+      })
+      .catch((err) => console.error('Error syncing remote clearance offers:', err));
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('latmedical_clearance', JSON.stringify(clearanceOffers));
+    fetch('/api/save-clearance', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(clearanceOffers, null, 2)
+    }).catch(err => console.error('Error saving clearance locally:', err));
+  }, [clearanceOffers]);
+
+  const addClearanceOffer = (offerData: Omit<ClearanceOffer, 'id'>): ClearanceOffer => {
+    const newOffer: ClearanceOffer = {
+      ...offerData,
+      id: `clr-${Date.now()}-${Math.floor(Math.random() * 1000)}`
+    };
+    setClearanceOffers(prev => [newOffer, ...prev]);
+    return newOffer;
+  };
+
+  const updateClearanceOffer = (id: string, updated: Partial<ClearanceOffer>) => {
+    setClearanceOffers(prev =>
+      prev.map(item => item.id === id ? { ...item, ...updated } : item)
+    );
+  };
+
+  const deleteClearanceOffer = (id: string) => {
+    setClearanceOffers(prev => prev.filter(item => item.id !== id));
+  };
+
+  const toggleClearanceOffer = (id: string) => {
+    setClearanceOffers(prev =>
+      prev.map(item => item.id === id ? { ...item, active: !item.active } : item)
+    );
+  };
+
   const decrementStockForOrder = (items: OrderItem[]) => {
+    // 1. Decrement regular inventory for non-clearance items
     setInventory((prevInv) =>
       prevInv.map((item) => {
-        const orderItem = items.find((oi) => oi.productId === item.productId);
+        const orderItem = items.find((oi) => !oi.isClearance && oi.productId === item.productId);
         if (!orderItem) return item;
 
         if (item.hasVariants && orderItem.variantName) {
@@ -131,12 +267,25 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         }
       })
     );
+
+    // 2. Decrement clearance stock for clearance items
+    setClearanceOffers(prevClr =>
+      prevClr.map(clr => {
+        const clrOrderItem = items.find(oi => oi.isClearance && oi.clearanceId === clr.id);
+        if (!clrOrderItem) return clr;
+        return {
+          ...clr,
+          stock: Math.max(0, clr.stock - clrOrderItem.quantity)
+        };
+      })
+    );
   };
 
   const incrementStockForOrder = (items: OrderItem[]) => {
+    // 1. Increment regular inventory
     setInventory((prevInv) =>
       prevInv.map((item) => {
-        const orderItem = items.find((oi) => oi.productId === item.productId);
+        const orderItem = items.find((oi) => !oi.isClearance && oi.productId === item.productId);
         if (!orderItem) return item;
 
         if (item.hasVariants && orderItem.variantName) {
@@ -151,6 +300,18 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         } else {
           return { ...item, stock: item.stock + orderItem.quantity };
         }
+      })
+    );
+
+    // 2. Increment clearance stock
+    setClearanceOffers(prevClr =>
+      prevClr.map(clr => {
+        const clrOrderItem = items.find(oi => oi.isClearance && oi.clearanceId === clr.id);
+        if (!clrOrderItem) return clr;
+        return {
+          ...clr,
+          stock: clr.stock + clrOrderItem.quantity
+        };
       })
     );
   };
@@ -210,11 +371,16 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     <InventoryContext.Provider value={{
       inventory,
       orders,
+      clearanceOffers,
       updateStock,
       decrementStockForOrder,
       addOrder,
       updateOrderStatus,
-      deleteOrder
+      deleteOrder,
+      addClearanceOffer,
+      updateClearanceOffer,
+      deleteClearanceOffer,
+      toggleClearanceOffer
     }}>
       {children}
     </InventoryContext.Provider>

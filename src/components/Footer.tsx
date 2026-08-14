@@ -56,11 +56,20 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab }) => {
             <h4 style={{ fontSize: '0.9rem', textTransform: 'uppercase', color: 'var(--accent-green)', fontWeight: 600, letterSpacing: '0.05em' }}>
               Navegación
             </h4>
-            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-              {['home', 'about', 'products', 'contact'].map((tab) => (
-                <li key={tab}>
+            <ul style={{ listStyle: 'none', display: 'flex', flexDirection: 'column', gap: '0.45rem' }}>
+              {[
+                { id: 'home', label: 'Inicio' },
+                { id: 'about', label: 'Nosotros' },
+                { id: 'products', label: 'Catálogo de Productos' },
+                { id: 'academia', label: 'Academia & Workshops' },
+                { id: 'descargas', label: 'Descargas & Consentimientos' },
+                { id: 'roi', label: 'Calculadora ROI' },
+                { id: 'clearance', label: 'Outlet B2B' },
+                { id: 'contact', label: 'Contacto & Asesoría' }
+              ].map((item) => (
+                <li key={item.id}>
                   <button
-                    onClick={() => handleNavClick(tab)}
+                    onClick={() => handleNavClick(item.id)}
                     style={{
                       background: 'none',
                       border: 'none',
@@ -68,12 +77,13 @@ export const Footer: React.FC<FooterProps> = ({ setActiveTab }) => {
                       fontSize: '0.8rem',
                       cursor: 'pointer',
                       transition: 'var(--transition-fast)',
-                      padding: 0
+                      padding: 0,
+                      textAlign: 'left'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-green)'}
                     onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.7)'}
                   >
-                    {tab === 'home' ? 'Inicio' : tab === 'about' ? 'Nosotros' : tab === 'products' ? 'Catálogo' : 'Contacto'}
+                    {item.label}
                   </button>
                 </li>
               ))}

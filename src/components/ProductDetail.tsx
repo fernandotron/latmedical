@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Product, products } from '../data/products';
 import { useCart } from '../context/CartContext';
 import { useInventory } from '../context/InventoryContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { ArrowLeft, ShoppingCart, Check, ShieldAlert, Award, AlertCircle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getAssetUrl } from '../utils/assets';
 
@@ -16,6 +17,7 @@ type DetailTab = 'desc' | 'specs' | 'clinical';
 export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, onViewProduct }) => {
   const { addToCart } = useCart();
   const { inventory } = useInventory();
+  const { formatPrice, currency } = useCurrency();
   
   // Find this product's inventory from the database
   const productInventory = inventory.find(item => item.productId === product.id);
@@ -54,23 +56,25 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
     setZoomPos({ x, y });
   };
 
-  // Helper to get active stock
+  // Helper to get active stock & price
   const getActiveStockInfo = () => {
-    if (!productInventory) return { stock: 0, name: '' };
+    if (!productInventory) return { stock: 0, name: '', price: product.price };
     if (hasVariants) {
       const variant = (productInventory.variants || []).find(v => v.id === selectedVariantId);
       return {
         stock: variant ? variant.stock : 0,
-        name: variant ? variant.name : ''
+        name: variant ? variant.name : '',
+        price: (variant && variant.price !== undefined) ? variant.price : product.price
       };
     }
     return {
       stock: productInventory.stock,
-      name: ''
+      name: '',
+      price: product.price
     };
   };
 
-  const { stock: activeStock, name: selectedVariantName } = getActiveStockInfo();
+  const { stock: activeStock, name: selectedVariantName, price: activePrice } = getActiveStockInfo();
 
   // Alternative images placeholder (only primary image is kept)
   const alternativeImages = [getAssetUrl(product.image)];
@@ -83,7 +87,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
 
   const handleAdd = () => {
     if (activeStock <= 0) return;
-    addToCart(product, qty, hasVariants ? selectedVariantName : undefined);
+    addToCart(product, qty, hasVariants ? selectedVariantName : undefined, activePrice);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -153,6 +157,13 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
               <img 
                 src={mainImage} 
                 alt={product.name} 
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  if (!target.dataset.triedFallback) {
+                    target.dataset.triedFallback = 'true';
+                    target.src = getAssetUrl('/images/products/mono.png');
+                  }
+                }}
                 style={{ 
                   maxWidth: '100%', 
                   maxHeight: '100%', 
@@ -329,11 +340,16 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <div>
                   <span style={{ fontSize: '0.75rem', color: 'var(--text-light)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>
-                    Precio Profesional
+                    Precio Profesional ({currency})
                   </span>
                   <span className="text-gradient-accent" style={{ fontSize: '1.8rem', fontWeight: 800 }}>
-                    USD ${product.price.toFixed(2)}
+                    {formatPrice(activePrice)}
                   </span>
+                  {currency === 'ARS' && (
+                    <span style={{ display: 'block', fontSize: '0.75rem', color: 'var(--text-medium)', marginTop: '0.1rem' }}>
+                      Eqv: USD ${activePrice.toFixed(2)}
+                    </span>
+                  )}
                 </div>
 
                 {/* Stock Level Indicator */}

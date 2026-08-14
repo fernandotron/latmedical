@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShoppingBag, ChevronDown, ChevronUp, ArrowLeft } from 'lucide-react';
 import { getAssetUrl } from '../utils/assets';
+import { ThreadComparator } from './ThreadComparator';
 
 interface HilosPDOPageProps {
   onContact: () => void;
@@ -555,6 +556,13 @@ export const HilosPDOPage: React.FC<HilosPDOPageProps> = ({ onContact, onBack, o
     {PRODUCTS.map((p, i) => (
       <ProductRow key={p.id} p={p} idx={i} onViewProduct={onViewProduct} onContact={onContact} />
     ))}
+
+    {/* ── INTERACTIVE THREAD COMPARATOR ── */}
+    <section style={{ padding: '4rem 0', background: '#F8FAFC', borderTop: '1px solid #E2E8F0' }}>
+      <div className="container">
+        <ThreadComparator onSelectProduct={(prod) => onViewProduct(prod.id)} />
+      </div>
+    </section>
 
     {/* ── BOTTOM CTA (Tensio-style banner) ── */}
     <section style={{

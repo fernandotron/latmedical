@@ -17,7 +17,7 @@
       {
         "id": "29g-50",
         "name": "29G x 50mm",
-        "stock": 79
+        "stock": 80
       },
       {
         "id": "27g-60",
@@ -222,25 +222,25 @@
   {
     "productId": "seffi-filler",
     "hasVariants": false,
-    "stock": 10,
+    "stock": 50,
     "variants": []
   },
   {
     "productId": "seffi-hair",
     "hasVariants": false,
-    "stock": 0,
+    "stock": 40,
     "variants": []
   },
   {
     "productId": "seffi-care",
     "hasVariants": false,
-    "stock": 0,
+    "stock": 30,
     "variants": []
   },
   {
     "productId": "seffi-gyn",
     "hasVariants": false,
-    "stock": 0,
+    "stock": 25,
     "variants": []
   }
 ]

@@ -1,11 +1,32 @@
 import React, { useState, useEffect } from 'react';
 import { useInventory, Order } from '../context/InventoryContext';
 import { products, Product } from '../data/products';
-import { Package, ClipboardList, Check, Edit2, ShieldCheck, Phone, MapPin, Trash2, Settings, Lock, Eye, EyeOff, Save, Info, Sparkles, Plus, Upload } from 'lucide-react';
+import { 
+  Package, 
+  ClipboardList, 
+  Check, 
+  Edit2, 
+  ShieldCheck, 
+  Phone, 
+  MapPin, 
+  Trash2, 
+  Settings, 
+  Lock, 
+  Eye, 
+  EyeOff, 
+  Save, 
+  Info, 
+  Sparkles, 
+  Plus, 
+  Upload, 
+  RefreshCw,
+  Flame,
+  Download
+} from 'lucide-react';
 import defaultSettings from '../data/general_settings.json';
 import defaultSlides from '../data/home_slides.json';
 
-type AdminTab = 'inventory' | 'orders' | 'settings' | 'submissions' | 'add-product' | 'edit-product';
+type AdminTab = 'inventory' | 'clearance' | 'orders' | 'settings' | 'submissions' | 'add-product' | 'edit-product';
 
 interface AdminPanelProps {
   isAdminLoggedIn: boolean;
@@ -13,7 +34,18 @@ interface AdminPanelProps {
 }
 
 export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdminLoginChange }) => {
-  const { inventory, orders, updateStock, updateOrderStatus, deleteOrder } = useInventory();
+  const { 
+    inventory, 
+    orders, 
+    clearanceOffers,
+    updateStock, 
+    updateOrderStatus, 
+    deleteOrder,
+    addClearanceOffer,
+    updateClearanceOffer,
+    deleteClearanceOffer,
+    toggleClearanceOffer
+  } = useInventory();
   const [activeTab, setActiveTab] = useState<AdminTab>('inventory');
   
   // Expanded Orders state for collapsing/expanding
@@ -77,6 +109,113 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
   const [savedFeedback, setSavedFeedback] = useState<Record<string, boolean>>({});
   const [settingsFeedback, setSettingsFeedback] = useState(false);
 
+  // Clearance Offers Creation State
+  const [clrProductId, setClrProductId] = useState(products[0]?.id || '');
+  const [clrVariantId, setClrVariantId] = useState('');
+  const [clrClearancePrice, setClrClearancePrice] = useState('');
+  const [clrStock, setClrStock] = useState('3');
+  const [clrExpiryDate, setClrExpiryDate] = useState('Octubre 2026');
+  const [clrBatchNumber, setClrBatchNumber] = useState('');
+  const [clrNote, setClrNote] = useState('');
+  const [clrFormFeedback, setClrFormFeedback] = useState(false);
+
+  // Clearance Inline Edits State
+  const [clrEditState, setClrEditState] = useState<Record<string, { stock: number; price: number; expiryDate: string; batchNumber: string }>>({});
+
+  // Sync clrEditState from clearanceOffers
+  useEffect(() => {
+    setClrEditState(prev => {
+      const next = { ...prev };
+      clearanceOffers.forEach(o => {
+        if (!next[o.id]) {
+          next[o.id] = {
+            stock: o.stock,
+            price: o.clearancePrice,
+            expiryDate: o.expiryDate,
+            batchNumber: o.batchNumber || ''
+          };
+        }
+      });
+      return next;
+    });
+  }, [clearanceOffers]);
+
+  // Handler to add new clearance offer
+  const handleCreateClearanceOffer = (e: React.FormEvent) => {
+    e.preventDefault();
+    const product = products.find(p => p.id === clrProductId);
+    if (!product) return;
+
+    const inv = inventory.find(i => i.productId === clrProductId);
+    let variantName: string | undefined = undefined;
+    let regPrice = product.price;
+
+    if (inv && inv.hasVariants && clrVariantId) {
+      const variant = inv.variants.find(v => v.id === clrVariantId);
+      if (variant) {
+        variantName = variant.name;
+        if (variant.price !== undefined) regPrice = variant.price;
+      }
+    }
+
+    const clearancePriceNum = Math.max(0, parseFloat(clrClearancePrice) || 0);
+    const stockNum = Math.max(1, parseInt(clrStock, 10) || 1);
+
+    addClearanceOffer({
+      productId: product.id,
+      variantId: clrVariantId || undefined,
+      variantName: variantName,
+      productName: product.name,
+      brand: product.brand,
+      image: product.image,
+      regularPrice: regPrice,
+      clearancePrice: clearancePriceNum,
+      stock: stockNum,
+      expiryDate: clrExpiryDate.trim() || 'Caducidad Próxima',
+      batchNumber: clrBatchNumber.trim() || undefined,
+      note: clrNote.trim() || 'Empaque indemne y esterilidad 100% garantizada.',
+      active: true
+    });
+
+    setClrClearancePrice('');
+    setClrBatchNumber('');
+    setClrNote('');
+    setClrFormFeedback(true);
+    setTimeout(() => setClrFormFeedback(false), 2500);
+  };
+
+  const handleClrValChange = (id: string, field: 'stock' | 'price' | 'expiryDate' | 'batchNumber', val: string) => {
+    setClrEditState(prev => {
+      const current = prev[id] || { stock: 0, price: 0, expiryDate: '', batchNumber: '' };
+      if (field === 'stock') {
+        const parsed = parseInt(val, 10);
+        return { ...prev, [id]: { ...current, stock: isNaN(parsed) ? 0 : parsed } };
+      }
+      if (field === 'price') {
+        const parsed = parseFloat(val);
+        return { ...prev, [id]: { ...current, price: isNaN(parsed) ? 0 : parsed } };
+      }
+      return { ...prev, [id]: { ...current, [field]: val } };
+    });
+  };
+
+  const handleSaveClearanceRow = (id: string) => {
+    const edit = clrEditState[id];
+    if (!edit) return;
+
+    updateClearanceOffer(id, {
+      stock: Math.max(0, edit.stock),
+      clearancePrice: Math.max(0, edit.price),
+      expiryDate: edit.expiryDate,
+      batchNumber: edit.batchNumber
+    });
+
+    setSavedFeedback(prev => ({ ...prev, [id]: true }));
+    setTimeout(() => {
+      setSavedFeedback(prev => ({ ...prev, [id]: false }));
+    }, 2000);
+  };
+
   // Expanded Products state for collapsing multiple calibers
   const [expandedProducts, setExpandedProducts] = useState<Record<string, boolean>>({});
 
@@ -87,36 +226,80 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
     }));
   };
 
-  // Fetch Form Submissions dynamically on mount or tab change
+  // Fetch Form Submissions dynamically on mount or tab change and merge with localStorage backup
+  const loadSubmissions = () => {
+    let localSubs: any[] = [];
+    try {
+      const saved = localStorage.getItem('latmedical_submissions');
+      if (saved) localSubs = JSON.parse(saved);
+    } catch (e) {
+      console.error('Error loading local submissions:', e);
+    }
+
+    fetch(`/api/data/form_submissions.json?t=${Date.now()}`, {
+      cache: 'no-store',
+      headers: { 'Cache-Control': 'no-cache' }
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        return res.json();
+      })
+      .then(data => {
+        const remoteSubs = Array.isArray(data) ? data : [];
+        const mergedMap = new Map<string, any>();
+        
+        // Populate local first
+        localSubs.forEach(sub => {
+          if (sub && sub.id) mergedMap.set(sub.id, sub);
+        });
+        // Override or append remote
+        remoteSubs.forEach(sub => {
+          if (sub && sub.id) mergedMap.set(sub.id, sub);
+        });
+        
+        const mergedList = Array.from(mergedMap.values());
+        setSubmissions(mergedList);
+      })
+      .catch(err => {
+        console.error('Error loading submissions from server:', err);
+        setSubmissions(localSubs);
+      });
+  };
+
   useEffect(() => {
-    fetch('/api/data/form_submissions.json')
-      .then(res => res.json())
-      .then(data => setSubmissions(data))
-      .catch(err => console.error('Error loading submissions:', err));
+    loadSubmissions();
   }, [activeTab]);
 
-  // Initialize editing states from product data
+  // Initialize editing states from product data without wiping in-progress user inputs
   useEffect(() => {
-    const initialState: Record<string, { stock: number; price: number }> = {};
-    products.forEach(product => {
-      const inv = inventory.find(i => i.productId === product.id);
-      if (inv) {
-        if (inv.hasVariants) {
-          inv.variants.forEach(variant => {
-            initialState[`${product.id}-${variant.id}`] = {
-              stock: variant.stock,
-              price: product.price
-            };
-          });
-        } else {
-          initialState[product.id] = {
-            stock: inv.stock,
-            price: product.price
-          };
+    setEditState(prev => {
+      const next = { ...prev };
+      products.forEach(product => {
+        const inv = inventory.find(i => i.productId === product.id);
+        if (inv) {
+          if (inv.hasVariants) {
+            inv.variants.forEach(variant => {
+              const key = `${product.id}-${variant.id}`;
+              if (!next[key]) {
+                next[key] = {
+                  stock: variant.stock,
+                  price: variant.price !== undefined ? variant.price : product.price
+                };
+              }
+            });
+          } else {
+            const key = product.id;
+            if (!next[key]) {
+              next[key] = {
+                stock: inv.stock,
+                price: product.price
+              };
+            }
+          }
         }
-      }
+      });
+      return next;
     });
-    setEditState(initialState);
   }, [inventory]);
 
   // Handle credentials fetch defaults
@@ -171,19 +354,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
     const itemData = editState[key];
     if (!itemData) return;
 
-    // 1. Update stock context in memory
-    updateStock(productId, variantId, Math.floor(itemData.stock));
+    const newStock = Math.max(0, Math.floor(itemData.stock));
+    const newPrice = Math.max(0, Number(itemData.price) || 0);
 
-    // 2. Update price override dynamically in products database array in memory
-    const product = products.find(p => p.id === productId);
-    if (product) {
-      product.price = itemData.price;
+    // 1. Update stock context in memory (and variant price if variant)
+    updateStock(productId, variantId, newStock, newPrice);
+
+    // 2. Only update product.price override dynamically if it has no variants
+    if (!variantId) {
+      const product = products.find(p => p.id === productId);
+      if (product) {
+        product.price = newPrice;
+      }
     }
 
     // 3. Prepare updated data for JSON files
     const updatedProductsList = products.map(p => {
-      if (p.id === productId) {
-        return { ...p, price: itemData.price };
+      if (p.id === productId && !variantId) {
+        return { ...p, price: newPrice };
       }
       return p;
     });
@@ -194,21 +382,93 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
         return {
           ...item,
           variants: item.variants.map(v => 
-            v.id === variantId ? { ...v, stock: Math.floor(itemData.stock) } : v
+            v.id === variantId ? { ...v, stock: newStock, price: newPrice } : v
           )
         };
       } else {
-        return { ...item, stock: Math.floor(itemData.stock) };
+        return { ...item, stock: newStock };
       }
     });
 
-    // 4. Persist
+    // 4. Persist to server backend
     persistProductsAndInventory(updatedProductsList, updatedInventoryList);
 
-    setSavedFeedback({ ...savedFeedback, [key]: true });
+    // 5. Keep saved state preserved in editState
+    setEditState(prev => ({
+      ...prev,
+      [key]: { stock: newStock, price: newPrice }
+    }));
+
+    setSavedFeedback(prev => ({ ...prev, [key]: true }));
     setTimeout(() => {
       setSavedFeedback(prev => ({ ...prev, [key]: false }));
     }, 2000);
+  };
+
+  // Bulk save all inventory rows
+  const handleSaveAllProducts = () => {
+    const updatedProductsList = products.map(product => {
+      const inv = inventory.find(i => i.productId === product.id);
+      if (inv && !inv.hasVariants) {
+        const edit = editState[product.id];
+        if (edit) {
+          const newPrice = Math.max(0, Number(edit.price) || 0);
+          product.price = newPrice;
+          return { ...product, price: newPrice };
+        }
+      }
+      return product;
+    });
+
+    const updatedInventoryList = inventory.map(item => {
+      if (item.hasVariants) {
+        return {
+          ...item,
+          variants: item.variants.map(v => {
+            const key = `${item.productId}-${v.id}`;
+            const edit = editState[key];
+            const newStock = edit ? Math.max(0, Math.floor(edit.stock)) : v.stock;
+            const newPrice = edit ? Math.max(0, Number(edit.price) || 0) : (v.price !== undefined ? v.price : (products.find(p => p.id === item.productId)?.price ?? 0));
+            return {
+              ...v,
+              stock: newStock,
+              price: newPrice
+            };
+          })
+        };
+      } else {
+        const edit = editState[item.productId];
+        const newStock = edit ? Math.max(0, Math.floor(edit.stock)) : item.stock;
+        return {
+          ...item,
+          stock: newStock
+        };
+      }
+    });
+
+    // Update inventory context
+    updatedInventoryList.forEach(item => {
+      if (item.hasVariants) {
+        item.variants.forEach(v => {
+          updateStock(item.productId, v.id, v.stock, v.price);
+        });
+      } else {
+        updateStock(item.productId, undefined, item.stock);
+      }
+    });
+
+    // Persist
+    persistProductsAndInventory(updatedProductsList, updatedInventoryList);
+
+    // Provide feedback
+    const feedbackMap: Record<string, boolean> = { all: true };
+    Object.keys(editState).forEach(k => {
+      feedbackMap[k] = true;
+    });
+    setSavedFeedback(feedbackMap);
+    setTimeout(() => {
+      setSavedFeedback({});
+    }, 2500);
   };
 
   const handleSaveSettings = (e: React.FormEvent) => {
@@ -237,6 +497,104 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
       console.error('Error saving settings or slides:', err);
       alert('Error al guardar la configuración.');
     });
+  };
+
+  // Export Complete Inventory Report to CSV / Excel
+  const handleExportStockCSV = (includeOutlet: boolean = true) => {
+    const headers = [
+      'Tipo de Inventario',
+      'ID Producto',
+      'Nombre Comercial',
+      'Marca',
+      'Categoría',
+      'Variante / Calibre',
+      'Stock Físico (Unidades)',
+      'Precio Base (USD)',
+      'Precio Final (USD)',
+      'Valor Total Stock (USD)',
+      'Fecha de Vencimiento',
+      'Lote / Observaciones'
+    ];
+
+    const rows: string[][] = [];
+
+    // 1. Regular Catalog Products
+    products.forEach(p => {
+      const inv = inventory.find(i => i.productId === p.id);
+      if (inv && inv.hasVariants && inv.variants) {
+        inv.variants.forEach(v => {
+          const key = `${p.id}-${v.id}`;
+          const currentStock = editState[key] ? editState[key].stock : v.stock;
+          const currentPrice = editState[key] ? editState[key].price : (v.price !== undefined ? v.price : p.price);
+          const totalVal = currentStock * currentPrice;
+          rows.push([
+            'Catálogo Regular',
+            p.id,
+            `"${p.name.replace(/"/g, '""')}"`,
+            p.brand,
+            p.category,
+            `"${v.name.replace(/"/g, '""')}"`,
+            currentStock.toString(),
+            currentPrice.toFixed(2),
+            currentPrice.toFixed(2),
+            totalVal.toFixed(2),
+            'Vigente',
+            'Stock disponible almacén central'
+          ]);
+        });
+      } else {
+        const currentStock = editState[p.id] ? editState[p.id].stock : (inv ? inv.stock : 0);
+        const currentPrice = editState[p.id] ? editState[p.id].price : p.price;
+        const totalVal = currentStock * currentPrice;
+        rows.push([
+          'Catálogo Regular',
+          p.id,
+          `"${p.name.replace(/"/g, '""')}"`,
+          p.brand,
+          p.category,
+          'Único / Estándar',
+          currentStock.toString(),
+          currentPrice.toFixed(2),
+          currentPrice.toFixed(2),
+          totalVal.toFixed(2),
+          'Vigente',
+          'Stock disponible almacén central'
+        ]);
+      }
+    });
+
+    // 2. Outlet / Clearance Items
+    if (includeOutlet && clearanceOffers && clearanceOffers.length > 0) {
+      clearanceOffers.forEach(c => {
+        const totalVal = c.stock * c.clearancePrice;
+        rows.push([
+          'Outlet / Oportunidad por Caducidad',
+          c.id,
+          `"${(c.productName || '').replace(/"/g, '""')}"`,
+          c.brand || 'Vlift Pro',
+          'Outlet B2B',
+          `"${(c.variantName || 'Lote Especial').replace(/"/g, '""')}"`,
+          c.stock.toString(),
+          (c.regularPrice || 0).toFixed(2),
+          (c.clearancePrice || 0).toFixed(2),
+          totalVal.toFixed(2),
+          c.expiryDate || 'Consultar',
+          `"${(c.batchNumber ? `Lote: ${c.batchNumber}. ` : '') + (c.note || '')}"`
+        ]);
+      });
+    }
+
+    const csvContent = '\uFEFF' + [headers.join(';'), ...rows.map(r => r.join(';'))].join('\r\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    const dateStr = new Date().toISOString().split('T')[0];
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Inventario_Latmedical_Completo_${dateStr}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   // File Upload base64 reader
@@ -650,6 +1008,21 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                 <Package size={14} /> Inventario y Precios
               </button>
               <button
+                onClick={() => setActiveTab('clearance')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.4rem',
+                  padding: '0.5rem 1.1rem', border: 'none', borderRadius: '6px',
+                  fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+                  background: activeTab === 'clearance' ? '#ffffff' : 'transparent',
+                  color: activeTab === 'clearance' ? '#dc2626' : 'var(--text-medium)',
+                  boxShadow: activeTab === 'clearance' ? 'var(--shadow-sm)' : 'none',
+                  transition: 'var(--transition-fast)',
+                  fontFamily: 'inherit'
+                }}
+              >
+                <Flame size={14} color={activeTab === 'clearance' ? '#dc2626' : 'currentColor'} /> Lotes en Oferta ({clearanceOffers.length})
+              </button>
+              <button
                 onClick={() => setActiveTab('orders')}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.4rem',
@@ -1013,16 +1386,65 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
               <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start', flex: 1 }}>
                 <Info size={18} color="#1d4ed8" style={{ marginTop: '0.15rem', flexShrink: 0 }} />
                 <p style={{ color: '#1e3a8a', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
-                  <strong>Modificación de Precios y Stock:</strong> Especifique el inventario disponible y el precio por unidad en dólares estadounidenses (USD) para cada artículo. El catálogo, las tarjetas del producto y el flujo de compra se actualizarán instantáneamente.
+                  <strong>Modificación de Precios y Stock:</strong> Puede modificar múltiples calibres o productos en simultáneo y guardar uno por uno con su botón correspondiente, o presionar <strong>"Guardar Todos los Cambios"</strong> para guardar toda la tabla de una vez.
                 </p>
               </div>
-              <button
-                onClick={handleOpenAddPage}
-                className="btn-primary"
-                style={{ padding: '0.75rem 1.5rem', fontSize: '0.82rem', fontWeight: 800, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-              >
-                <Plus size={16} /> Añadir Producto
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  onClick={() => handleExportStockCSV(true)}
+                  title="Descargar reporte completo en formato CSV compatible con Microsoft Excel (incluye catálogo regular y lotes outlet)"
+                  style={{
+                    background: '#059669',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '0.75rem 1.25rem',
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    boxShadow: 'var(--shadow-sm)',
+                    transition: 'var(--transition-fast)',
+                    fontFamily: 'inherit'
+                  }}
+                  onMouseOver={e => e.currentTarget.style.background = '#047857'}
+                  onMouseOut={e => e.currentTarget.style.background = '#059669'}
+                >
+                  <Download size={16} /> Descargar Stock (Excel / CSV)
+                </button>
+                <button
+                  onClick={handleSaveAllProducts}
+                  style={{
+                    background: savedFeedback['all'] ? 'var(--success)' : 'var(--primary-dark)',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '6px',
+                    padding: '0.75rem 1.4rem',
+                    fontSize: '0.82rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    boxShadow: 'var(--shadow-sm)',
+                    transition: 'var(--transition-fast)',
+                    fontFamily: 'inherit'
+                  }}
+                >
+                  {savedFeedback['all'] ? <Check size={16} /> : <Save size={16} />}
+                  {savedFeedback['all'] ? '¡Todo Guardado!' : 'Guardar Todos los Cambios'}
+                </button>
+                <button
+                  onClick={handleOpenAddPage}
+                  className="btn-primary"
+                  style={{ padding: '0.75rem 1.5rem', fontSize: '0.82rem', fontWeight: 800, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
+                >
+                  <Plus size={16} /> Añadir Producto
+                </button>
+              </div>
             </div>
 
             <div style={{
@@ -1129,7 +1551,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                               {isExpanded && inv.variants.map((variant) => {
                                 const key = `${product.id}-${variant.id}`;
                                 const isSaved = savedFeedback[key] ?? false;
-                                const data = editState[key] || { stock: variant.stock, price: product.price };
+                                const data = editState[key] || { stock: variant.stock, price: variant.price !== undefined ? variant.price : product.price };
 
                                 return (
                                   <tr key={key} style={{ borderBottom: '1px solid var(--border-light)', backgroundColor: '#fcfcfc' }}>
@@ -1338,6 +1760,446 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                 </tbody>
               </table>
             </div>
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB: CLEARANCE & EXPIRY DEALS MANAGEMENT */}
+        {/* ============================================================== */}
+        {activeTab === 'clearance' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', animation: 'fadeIn 0.4s ease' }}>
+            
+            {/* Info Banner */}
+            <div style={{ background: '#fff7ed', border: '1.5px solid #fed7aa', borderRadius: '12px', padding: '1.25rem 1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'flex-start', flex: 1 }}>
+                <Flame size={24} color="#ea580c" style={{ marginTop: '0.1rem', flexShrink: 0 }} />
+                <div>
+                  <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '0.95rem', fontWeight: 800, color: '#9a3412' }}>
+                    Gestión de Lotes con Descuento por Vencimiento Cercano (Outlet B2B)
+                  </h3>
+                  <p style={{ color: '#c2410c', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
+                    Configure ofertas especiales para lotes con fecha de caducidad próxima. Las unidades que asigne aquí tendrán su propio stock y precio con descuento en la sección <strong>"🔥 Oportunidades"</strong> de la tienda, sin alterar el inventario ni el precio regular del producto en el catálogo general.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleExportStockCSV(true)}
+                style={{
+                  background: '#059669',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  padding: '0.7rem 1.2rem',
+                  fontSize: '0.8rem',
+                  fontWeight: 800,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.4rem',
+                  boxShadow: 'var(--shadow-sm)',
+                  fontFamily: 'inherit',
+                  flexShrink: 0
+                }}
+              >
+                <Download size={15} /> Descargar Stock & Outlet (CSV)
+              </button>
+            </div>
+
+            {/* Form to create a new clearance offer */}
+            <div style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: '12px', padding: '1.75rem', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.75rem' }}>
+                <Plus size={18} color="#ea580c" />
+                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
+                  Crear Nuevo Lote en Oferta / Oportunidad Médica
+                </h3>
+              </div>
+
+              <form onSubmit={handleCreateClearanceOffer} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1.25rem' }}>
+                  
+                  {/* Select Product */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.4rem' }}>
+                      1. Seleccionar Producto
+                    </label>
+                    <select
+                      value={clrProductId}
+                      onChange={e => {
+                        setClrProductId(e.target.value);
+                        setClrVariantId('');
+                      }}
+                      required
+                      style={{ width: '100%', height: '38px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none', fontFamily: 'inherit', fontSize: '0.85rem' }}
+                    >
+                      {products.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name} ({p.brand})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Select Caliber/Variant (if product has variants) */}
+                  {(() => {
+                    const activeInv = inventory.find(i => i.productId === clrProductId);
+                    if (!activeInv || !activeInv.hasVariants || activeInv.variants.length === 0) return null;
+                    return (
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.4rem' }}>
+                          2. Medida / Calibre
+                        </label>
+                        <select
+                          value={clrVariantId}
+                          onChange={e => setClrVariantId(e.target.value)}
+                          required
+                          style={{ width: '100%', height: '38px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none', fontFamily: 'inherit', fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-green)' }}
+                        >
+                          <option value="">Seleccione medida...</option>
+                          {activeInv.variants.map(v => (
+                            <option key={v.id} value={v.id}>
+                              {v.name} (Stock reg: {v.stock} | Precio reg: USD ${v.price ?? products.find(p => p.id === clrProductId)?.price})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Regular Price Indicator */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.4rem' }}>
+                      Precio Regular de Referencia
+                    </label>
+                    <div style={{ height: '38px', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '6px', display: 'flex', alignItems: 'center', padding: '0 0.75rem', fontSize: '0.9rem', fontWeight: 700, color: 'var(--text-medium)' }}>
+                      USD ${(() => {
+                        const p = products.find(prod => prod.id === clrProductId);
+                        if (!p) return '0.00';
+                        const inv = inventory.find(i => i.productId === clrProductId);
+                        if (inv && inv.hasVariants && clrVariantId) {
+                          const v = inv.variants.find(item => item.id === clrVariantId);
+                          if (v && v.price !== undefined) return v.price.toFixed(2);
+                        }
+                        return p.price.toFixed(2);
+                      })()}
+                    </div>
+                  </div>
+
+                  {/* Special Clearance Price */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: '#c2410c', marginBottom: '0.4rem' }}>
+                      3. Precio Especial con Descuento (USD) *
+                    </label>
+                    <input
+                      type="number"
+                      min="0.01"
+                      step="0.01"
+                      placeholder="Ej: 15.00"
+                      value={clrClearancePrice}
+                      onChange={e => setClrClearancePrice(e.target.value)}
+                      required
+                      style={{ width: '100%', height: '38px', padding: '0 0.6rem', borderRadius: '6px', border: '2px solid #fdba74', outline: 'none', fontFamily: 'inherit', fontSize: '0.9rem', fontWeight: 800, color: '#c2410c' }}
+                    />
+                  </div>
+
+                  {/* Stock allocated for this batch */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.4rem' }}>
+                      4. Stock en este Lote (Unidades) *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      placeholder="Ej: 3"
+                      value={clrStock}
+                      onChange={e => setClrStock(e.target.value)}
+                      required
+                      style={{ width: '100%', height: '38px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none', fontFamily: 'inherit', fontSize: '0.88rem' }}
+                    />
+                  </div>
+
+                  {/* Expiration Date */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.4rem' }}>
+                      5. Fecha de Caducidad / Vto *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Octubre 2026 o 10/2026"
+                      value={clrExpiryDate}
+                      onChange={e => setClrExpiryDate(e.target.value)}
+                      required
+                      style={{ width: '100%', height: '38px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none', fontFamily: 'inherit', fontSize: '0.88rem' }}
+                    />
+                  </div>
+
+                  {/* Batch Number */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.4rem' }}>
+                      6. Número de Lote (Opcional)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: LOTE-GEN-2610"
+                      value={clrBatchNumber}
+                      onChange={e => setClrBatchNumber(e.target.value)}
+                      style={{ width: '100%', height: '38px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none', fontFamily: 'inherit', fontSize: '0.88rem' }}
+                    />
+                  </div>
+
+                  {/* Clinical note */}
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.4rem' }}>
+                      7. Nota o Detalle del Lote
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Empaque y esterilidad sellada 100% de fábrica."
+                      value={clrNote}
+                      onChange={e => setClrNote(e.target.value)}
+                      style={{ width: '100%', height: '38px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', outline: 'none', fontFamily: 'inherit', fontSize: '0.88rem' }}
+                    />
+                  </div>
+
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+                  {clrFormFeedback ? (
+                    <span style={{ color: 'var(--success)', fontSize: '0.82rem', fontWeight: 700 }}>
+                      ✅ ¡Lote de liquidación publicado con éxito en la tienda!
+                    </span>
+                  ) : <span />}
+
+                  <button
+                    type="submit"
+                    style={{
+                      background: 'linear-gradient(135deg, #ea580c 0%, #c2410c 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '0.75rem 2rem',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      boxShadow: '0 4px 12px rgba(234, 88, 12, 0.25)',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <Plus size={16} /> Publicar Lote en Oferta
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Table of active and inactive clearance lots */}
+            <div style={{ background: '#ffffff', border: '1px solid var(--border-light)', borderRadius: '12px', overflowX: 'auto', boxShadow: 'var(--shadow-sm)' }}>
+              <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--border-light)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
+                  Lotes en Liquidación Existentes ({clearanceOffers.length})
+                </h3>
+              </div>
+
+              {clearanceOffers.length === 0 ? (
+                <div style={{ padding: '3rem 2rem', textAlign: 'center', color: 'var(--text-medium)', fontSize: '0.88rem' }}>
+                  No hay lotes creados todavía. Utilice el formulario superior para añadir su primer lote con descuento.
+                </div>
+              ) : (
+                <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }} className="admin-table">
+                  <thead>
+                    <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-light)' }}>
+                      <th style={{ padding: '0.85rem 1.25rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)' }}>Estado</th>
+                      <th style={{ padding: '0.85rem 1.25rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)' }}>Producto / Medida</th>
+                      <th style={{ padding: '0.85rem 1.25rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', textAlign: 'center' }}>Precio Regular</th>
+                      <th style={{ padding: '0.85rem 1.25rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', textAlign: 'center' }}>Precio Oferta (USD)</th>
+                      <th style={{ padding: '0.85rem 1.25rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', textAlign: 'center' }}>Stock Lote</th>
+                      <th style={{ padding: '0.85rem 1.25rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)' }}>Vencimiento</th>
+                      <th style={{ padding: '0.85rem 1.25rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)' }}>Lote / Nota</th>
+                      <th style={{ padding: '0.85rem 1.25rem', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', width: '150px' }}>Acciones</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {clearanceOffers.map(offer => {
+                      const edit = clrEditState[offer.id] || {
+                        stock: offer.stock,
+                        price: offer.clearancePrice,
+                        expiryDate: offer.expiryDate,
+                        batchNumber: offer.batchNumber || ''
+                      };
+                      const isSaved = savedFeedback[offer.id] || false;
+
+                      return (
+                        <tr key={offer.id} style={{ borderBottom: '1px solid var(--border-light)', background: offer.active ? '#ffffff' : '#f8fafc', opacity: offer.active ? 1 : 0.65 }}>
+                          {/* Status toggle */}
+                          <td style={{ padding: '0.85rem 1.25rem' }}>
+                            <button
+                              type="button"
+                              onClick={() => toggleClearanceOffer(offer.id)}
+                              style={{
+                                background: offer.active ? '#dcfce7' : '#f1f5f9',
+                                color: offer.active ? '#15803d' : '#64748b',
+                                border: 'none',
+                                borderRadius: '20px',
+                                padding: '0.25rem 0.6rem',
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.3rem',
+                                fontFamily: 'inherit'
+                              }}
+                            >
+                              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: offer.active ? '#22c55e' : '#94a3b8' }} />
+                              {offer.active ? 'Activo' : 'Pausado'}
+                            </button>
+                          </td>
+
+                          {/* Product info */}
+                          <td style={{ padding: '0.85rem 1.25rem' }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--primary-dark)' }}>
+                              {offer.productName}
+                            </div>
+                            {offer.variantName ? (
+                              <span style={{ color: 'var(--accent-green)', fontWeight: 600, fontSize: '0.75rem' }}>
+                                Medida: {offer.variantName}
+                              </span>
+                            ) : (
+                              <span style={{ color: 'var(--text-light)', fontSize: '0.72rem' }}>
+                                Kit Estándar
+                              </span>
+                            )}
+                          </td>
+
+                          {/* Regular Price */}
+                          <td style={{ padding: '0.85rem 1.25rem', textAlign: 'center', fontSize: '0.82rem', color: 'var(--text-light)', textDecoration: 'line-through' }}>
+                            USD ${offer.regularPrice.toFixed(2)}
+                          </td>
+
+                          {/* Clearance Price Input */}
+                          <td style={{ padding: '0.4rem 1rem', textAlign: 'center' }}>
+                            <input
+                              type="number"
+                              min="0.01"
+                              step="0.01"
+                              value={edit.price}
+                              onChange={e => handleClrValChange(offer.id, 'price', e.target.value)}
+                              style={{
+                                width: '80px',
+                                height: '30px',
+                                textAlign: 'center',
+                                borderRadius: '4px',
+                                border: '1.5px solid #fdba74',
+                                fontWeight: 800,
+                                color: '#c2410c',
+                                outline: 'none',
+                                fontFamily: 'inherit'
+                              }}
+                            />
+                          </td>
+
+                          {/* Stock Input */}
+                          <td style={{ padding: '0.4rem 1rem', textAlign: 'center' }}>
+                            <input
+                              type="number"
+                              min="0"
+                              value={edit.stock}
+                              onChange={e => handleClrValChange(offer.id, 'stock', e.target.value)}
+                              style={{
+                                width: '65px',
+                                height: '30px',
+                                textAlign: 'center',
+                                borderRadius: '4px',
+                                border: '1px solid #cbd5e1',
+                                outline: 'none',
+                                fontWeight: 700,
+                                fontFamily: 'inherit'
+                              }}
+                            />
+                          </td>
+
+                          {/* Expiry Date Input */}
+                          <td style={{ padding: '0.4rem 1rem' }}>
+                            <input
+                              type="text"
+                              value={edit.expiryDate}
+                              onChange={e => handleClrValChange(offer.id, 'expiryDate', e.target.value)}
+                              style={{
+                                width: '110px',
+                                height: '30px',
+                                padding: '0 0.4rem',
+                                borderRadius: '4px',
+                                border: '1px solid #cbd5e1',
+                                fontSize: '0.78rem',
+                                fontWeight: 600,
+                                outline: 'none',
+                                fontFamily: 'inherit'
+                              }}
+                            />
+                          </td>
+
+                          {/* Batch / Note */}
+                          <td style={{ padding: '0.85rem 1.25rem', fontSize: '0.75rem', color: 'var(--text-medium)' }}>
+                            {offer.batchNumber && <div><strong>{offer.batchNumber}</strong></div>}
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-light)' }}>{offer.note}</div>
+                          </td>
+
+                          {/* Actions */}
+                          <td style={{ padding: '0.4rem 1.25rem' }}>
+                            <div style={{ display: 'flex', gap: '0.35rem', alignItems: 'center' }}>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveClearanceRow(offer.id)}
+                                style={{
+                                  background: isSaved ? 'var(--success)' : 'var(--primary-dark)',
+                                  border: 'none',
+                                  borderRadius: '4px',
+                                  height: '28px',
+                                  padding: '0 0.6rem',
+                                  color: '#FFFFFF',
+                                  cursor: 'pointer',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 700,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '0.2rem',
+                                  fontFamily: 'inherit'
+                                }}
+                              >
+                                {isSaved ? <Check size={12} /> : <Save size={12} />}
+                                {isSaved ? 'OK' : 'Guardar'}
+                              </button>
+
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (window.confirm('¿Desea eliminar esta oferta de lote?')) {
+                                    deleteClearanceOffer(offer.id);
+                                  }
+                                }}
+                                style={{
+                                  background: 'none',
+                                  border: 'none',
+                                  color: 'var(--danger)',
+                                  cursor: 'pointer',
+                                  padding: '0.3rem'
+                                }}
+                                title="Eliminar oferta"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+
           </div>
         )}
 
@@ -1584,9 +2446,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
 
           return (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'fadeIn 0.4s ease' }}>
-              <p style={{ color: 'var(--text-medium)', fontSize: '0.9rem', margin: 0 }}>
-                Registro de mensajes recibidos a través del formulario de contacto y del formulario de inscripción a cursos internacionales.
-              </p>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                <p style={{ color: 'var(--text-medium)', fontSize: '0.9rem', margin: 0 }}>
+                  Registro de mensajes recibidos a través del formulario de contacto y del formulario de inscripción a cursos internacionales.
+                </p>
+                <button
+                  onClick={loadSubmissions}
+                  className="btn-secondary"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
+                >
+                  <RefreshCw size={14} /> Actualizar Formularios
+                </button>
+              </div>
 
               {sortedSubmissions.length === 0 ? (
                 <div style={{

@@ -18,9 +18,16 @@
     
     <!-- Advanced SEO Meta Tags (July 2026 Update) -->
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="keywords" content="Latmedical, Latmedical Argentina, Hilos PDO, V Lift Pro, Seffiline, Medicina Regenerativa, Hilos de sustentación, ANMAT, Medicina estética, rejuvenecimiento facial, lifting sin cirugia, SEFFILLER, SEFFIHAIR, SEFFICARE, SEFFIGYN" />
     <meta name="author" content="Latmedical Argentina" />
     <meta name="geo.region" content="AR" />
     <meta name="geo.placename" content="Buenos Aires" />
+
+    <!-- Canonical & Localized Alternates (July 2026 Optimization) -->
+    <link rel="canonical" href="https://latmedical.com.ar/" />
+    <link rel="alternate" hreflang="es-ar" href="https://latmedical.com.ar/" />
+    <link rel="alternate" hreflang="es" href="https://latmedical.com.ar/" />
+    <link rel="alternate" hreflang="x-default" href="https://latmedical.com/" />
     
     <!-- Open Graph / Facebook / WhatsApp (Visual Sharing Optimization) -->
     <meta property="og:type" content="website" />
@@ -41,30 +48,87 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap" rel="stylesheet">
-    <!-- JSON-LD Structured Data for Latmedical -->
+    <!-- JSON-LD Structured Data for Latmedical (MedicalBusiness & WebSite) -->
     <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "MedicalBusiness",
-        "name": "Latmedical",
-        "alternateName": "Latmedical Argentina",
-        "url": "https://latmedical.com.ar",
-        "logo": "https://latmedical.com.ar/logo-symbol.png",
-        "image": "https://latmedical.com.ar/distribucion_medica.png",
-        "description": "Distribuidor oficial exclusivo en Argentina de Hilos PDO V Lift Pro y kits de medicina regenerativa Seffiline.",
-        "telephone": "+54-911-5457-7210",
-        "address": {
-          "@type": "PostalAddress",
-          "addressLocality": "Buenos Aires",
-          "addressCountry": "AR"
+      [
+        {
+          "@context": "https://schema.org",
+          "@type": "MedicalBusiness",
+          "name": "Latmedical",
+          "alternateName": "Latmedical Argentina",
+          "url": "https://latmedical.com.ar",
+          "logo": "https://latmedical.com.ar/logo-symbol.png",
+          "image": "https://latmedical.com.ar/distribucion_medica.png",
+          "description": "Distribuidor oficial exclusivo en Argentina de Hilos PDO V Lift Pro y kits de medicina regenerativa Seffiline.",
+          "telephone": "+54-911-5457-7210",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Buenos Aires",
+            "addressCountry": "AR"
+          },
+          "priceRange": "$$",
+          "areaServed": "AR",
+          "sameAs": [
+            "https://latmedical.com",
+            "https://www.instagram.com/seffiline_sp/"
+          ],
+          "knowsAbout": [
+            "Medicina Estética",
+            "Hilos PDO V Lift Pro",
+            "Medicina Regenerativa Seffiline",
+            "Hilos de sustentación facial",
+            "Terapia celular autóloga",
+            "Lifting biológico no quirúrgico"
+          ]
         },
-        "priceRange": "$$",
-        "areaServed": "AR"
-      }
+        {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          "name": "Latmedical Argentina",
+          "url": "https://latmedical.com.ar",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": "https://latmedical.com.ar/productos?search={search_term_string}",
+            "query-input": "required name=search_term_string"
+          }
+        }
+      ]
     </script>
   </head>
   <body>
-    <div id="root"></div>
+    <div id="root">
+      <!-- SEO Pre-render Fallback Content for Crawlers (Vite React SPA Boost) -->
+      <header style="display:none;">
+        <h1>Latmedical Argentina | Hilos PDO y Medicina Regenerativa</h1>
+        <nav>
+          <ul>
+            <li><a href="/inicio">Inicio</a></li>
+            <li><a href="/nosotros">Nosotros</a></li>
+            <li><a href="/hilos-pdo">Hilos PDO V Lift Pro</a></li>
+            <li><a href="/seffiline">Medicina Regenerativa Seffiline</a></li>
+            <li><a href="/productos">Catálogo de Productos</a></li>
+            <li><a href="/contacto">Contacto</a></li>
+          </ul>
+        </nav>
+      </header>
+      <main style="display:none;">
+        <section>
+          <h2>Distribuidor Oficial y Exclusivo de Medicina Estética en Argentina</h2>
+          <p>Latmedical es el proveedor líder en Argentina de productos de medicina estética avanzada. Nos especializamos en la distribución de <strong>Hilos de Polidioxanona (PDO) V Lift Pro</strong> y kits de terapia celular autóloga <strong>Seffiline</strong>.</p>
+          <p>Ofrecemos productos con trazabilidad completa autorizados por la ANMAT, asegurando la más alta calidad y seguridad para cirujanos plásticos, dermatólogos y médicos especialistas en estética.</p>
+        </section>
+        <section>
+          <h2>Nuestros Productos Destacados</h2>
+          <ul>
+            <li><strong>Hilos PDO V Lift Pro:</strong> Monofilamentos, espiculados (COGS), conos moldeados y hilos de doble aguja para rejuvenecimiento facial y corporal sin cirugía.</li>
+            <li><strong>Kits Seffiline:</strong> Sistemas avanzados para la regeneración de tejidos (Seffi-Filler, Seffi-Hair, Seffi-Care, Seffi-Gyn) que permiten tratamientos autólogos seguros y efectivos.</li>
+          </ul>
+        </section>
+      </main>
+      <footer style="display:none;">
+        <p>© 2026 Latmedical Argentina. Todos los derechos reservados. Contacto: +54 9 11 5457-7210.</p>
+      </footer>
+    </div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { X, Trash2, Plus, Minus, CreditCard, Landmark, CheckCircle2, ArrowLeft, ExternalLink, Printer } from 'lucide-react';
+import { X, Trash2, Plus, Minus, CreditCard, Landmark, CheckCircle2, ArrowLeft, ExternalLink, Printer, FileText } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useCurrency } from '../context/CurrencyContext';
 import { getAssetUrl } from '../utils/assets';
 import { useInventory, OrderItem } from '../context/InventoryContext';
 import defaultSettings from '../data/general_settings.json';
+import { QuotationGenerator } from './QuotationGenerator';
 
 interface CartProps {
   isOpen: boolean;
@@ -15,8 +17,11 @@ type CheckoutStep = 'cart' | 'checkout' | 'success';
 export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
   const { cartItems, updateQuantity, removeFromCart, clearCart, cartTotal, getItemFreeQty } = useCart();
   const { addOrder } = useInventory();
+  const { formatPrice, currency } = useCurrency();
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [orderNumber, setOrderNumber] = useState<string>('');
+  const [quoteModalOpen, setQuoteModalOpen] = useState<boolean>(false);
+
   
   // Checkout form state
   const [formData, setFormData] = useState({
@@ -101,7 +106,11 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
       brand: item.product.brand,
       variantName: item.selectedVariant,
       quantity: item.quantity,
-      price: item.product.price
+      price: typeof item.unitPrice === 'number' ? item.unitPrice : item.product.price,
+      isClearance: item.isClearance,
+      clearanceId: item.clearanceId,
+      expiryDate: item.expiryDate,
+      batchNumber: item.batchNumber
     }));
 
     // Register order and decrement stock automatically
@@ -131,13 +140,19 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
     const itemsText = cartItems
       .map(item => {
         if (!item || !item.product) return '';
-        const price = typeof item.product.price === 'number' ? item.product.price : 0;
+        const price = typeof item.unitPrice === 'number' ? item.unitPrice : (typeof item.product.price === 'number' ? item.product.price : 0);
         const freeQty = getItemFreeQty(item);
         const paidQty = item.quantity - freeQty;
-        if (freeQty > 0) {
-          return `• ${item.quantity}x ${item.product.name} ${item.selectedVariant ? `[${item.selectedVariant}]` : ''} (🎁 ¡Incluye ${freeQty} gratis!) - USD $${(price * paidQty).toFixed(2)}`;
+        
+        let label = `• ${item.quantity}x ${item.product.name}`;
+        if (item.selectedVariant) label += ` [${item.selectedVariant}]`;
+        if (item.isClearance) {
+          label += ` (🏷️ Oportunidad Lote Vto: ${item.expiryDate || 'Cercano'}${item.batchNumber ? ` - ${item.batchNumber}` : ''})`;
+        } else if (freeQty > 0) {
+          label += ` (🎁 ¡Incluye ${freeQty} gratis!)`;
         }
-        return `• ${item.quantity}x ${item.product.name} ${item.selectedVariant ? `[${item.selectedVariant}]` : ''} - USD $${(price * item.quantity).toFixed(2)}`;
+        label += ` - USD $${(price * paidQty).toFixed(2)}`;
+        return label;
       })
       .filter(Boolean)
       .join('\n');
@@ -306,17 +321,21 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem', flexGrow: 1 }}>
                   {cartItems.map((item) => {
                     if (!item || !item.product) return null;
+                    const itemKey = item.isClearance 
+                      ? `clr-${item.clearanceId}` 
+                      : `${item.product.id}-${item.selectedVariant || 'none'}`;
+
                     return (
                       <div 
-                        key={`${item.product.id}-${item.selectedVariant || 'none'}`}
+                        key={itemKey}
                         style={{
                           display: 'flex',
                           gap: '1rem',
                           alignItems: 'center',
-                          background: '#F9FAFB',
+                          background: item.isClearance ? '#fffbeb' : '#F9FAFB',
                           padding: '1rem',
                           borderRadius: '8px',
-                          border: '1px solid var(--border-light)'
+                          border: item.isClearance ? '1.5px solid #fde68a' : '1px solid var(--border-light)'
                         }}
                       >
                         <img 
@@ -325,20 +344,51 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                           style={{ width: '50px', height: '50px', objectFit: 'contain', borderRadius: '4px', background: '#ffffff' }}
                         />
                       <div style={{ flexGrow: 1 }}>
-                        <h4 style={{ fontSize: '0.85rem', fontWeight: 700, marginBottom: '0.2rem' }}>
-                          {item.product.name}
-                        </h4>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.2rem' }}>
+                          <h4 style={{ fontSize: '0.85rem', fontWeight: 700, margin: 0 }}>
+                            {item.product.name}
+                          </h4>
+                          {item.isClearance && (
+                            <span style={{
+                              background: '#dc2626',
+                              color: '#ffffff',
+                              fontSize: '0.62rem',
+                              fontWeight: 800,
+                              padding: '0.1rem 0.4rem',
+                              borderRadius: '4px',
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.04em'
+                            }}>
+                              🔥 Lote Oferta
+                            </span>
+                          )}
+                        </div>
+
                         {item.selectedVariant && (
                           <span className="badge badge-accent-green" style={{ textTransform: 'none', padding: '0.1rem 0.4rem', fontSize: '0.65rem', marginBottom: '0.2rem', display: 'inline-block' }}>
                             Medida: {item.selectedVariant}
                           </span>
                         )}
+
+                        {item.isClearance && (
+                          <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap', margin: '0.15rem 0' }}>
+                            <span style={{ fontSize: '0.68rem', color: '#b45309', fontWeight: 700, background: '#fef3c7', padding: '0.1rem 0.4rem', borderRadius: '4px' }}>
+                              ⏱️ Vto: {item.expiryDate || 'Cercano'}
+                            </span>
+                            {item.batchNumber && (
+                              <span style={{ fontSize: '0.68rem', color: '#6b7280', fontWeight: 600 }}>
+                                ({item.batchNumber})
+                              </span>
+                            )}
+                          </div>
+                        )}
+
                         <p style={{ fontSize: '0.75rem', color: 'var(--text-medium)', margin: '0 0 0.25rem 0' }}>{item.product.brand}</p>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                          <span style={{ fontSize: '0.85rem', color: 'var(--accent-green)', fontWeight: 600 }}>
-                            USD ${Number(item.product.price || 0).toFixed(2)}
+                          <span style={{ fontSize: '0.85rem', color: item.isClearance ? '#b45309' : 'var(--accent-green)', fontWeight: 700 }}>
+                            {formatPrice(Number((typeof item.unitPrice === 'number' ? item.unitPrice : item.product.price) || 0))}
                           </span>
-                          {getItemFreeQty(item) > 0 && (
+                          {!item.isClearance && getItemFreeQty(item) > 0 && (
                             <span style={{ color: '#10B981', fontSize: '0.7rem', fontWeight: 700 }}>
                               🎁 ¡{getItemFreeQty(item)} unidad{getItemFreeQty(item) > 1 ? 'es' : ''} de regalo!
                             </span>
@@ -349,7 +399,7 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                       {/* Quantity & Delete */}
                       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
                         <button 
-                          onClick={() => removeFromCart(item.product.id, item.selectedVariant)}
+                          onClick={() => removeFromCart(item.product.id, item.selectedVariant, item.clearanceId)}
                           style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)' }}
                         >
                           <Trash2 size={16} />
@@ -363,7 +413,7 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                           background: 'var(--bg-white)'
                         }}>
                           <button 
-                            onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.selectedVariant)}
+                            onClick={() => updateQuantity(item.product.id, item.quantity - 1, item.selectedVariant, item.clearanceId)}
                             style={{ background: 'none', border: 'none', width: '22px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}
                           >
                             <Minus size={10} />
@@ -372,8 +422,14 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                             {item.quantity}
                           </span>
                           <button 
-                            onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.selectedVariant)}
-                            style={{ background: 'none', border: 'none', width: '22px', cursor: 'pointer', display: 'flex', justifyContent: 'center' }}
+                            onClick={() => updateQuantity(item.product.id, item.quantity + 1, item.selectedVariant, item.clearanceId)}
+                            disabled={item.maxStock !== undefined && item.quantity >= item.maxStock}
+                            style={{ 
+                              background: 'none', border: 'none', width: '22px', 
+                              cursor: (item.maxStock !== undefined && item.quantity >= item.maxStock) ? 'not-allowed' : 'pointer', 
+                              opacity: (item.maxStock !== undefined && item.quantity >= item.maxStock) ? 0.4 : 1,
+                              display: 'flex', justifyContent: 'center' 
+                            }}
                           >
                             <Plus size={10} />
                           </button>
@@ -394,7 +450,7 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
                     <span style={{ color: 'var(--text-medium)' }}>Subtotal</span>
-                    <span style={{ fontWeight: 600 }}>USD ${cartTotal.toFixed(2)}</span>
+                    <span style={{ fontWeight: 600 }}>{formatPrice(cartTotal)}</span>
                   </div>
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem' }}>
                     <span style={{ color: 'var(--text-medium)' }}>Envío (Todo el país)</span>
@@ -403,14 +459,22 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                   <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
+                    alignItems: 'baseline',
                     fontSize: '1.1rem',
                     fontWeight: 700,
                     borderTop: '1px dashed var(--border-light)',
                     paddingTop: '0.75rem',
                     color: 'var(--primary-dark)'
                   }}>
-                    <span>Total Compra</span>
-                    <span className="text-gradient-accent">USD ${cartTotal.toFixed(2)}</span>
+                    <span>Total Compra ({currency})</span>
+                    <div style={{ textAlign: 'right' }}>
+                      <span className="text-gradient-accent">{formatPrice(cartTotal)}</span>
+                      {currency === 'ARS' && (
+                        <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-medium)', fontWeight: 500 }}>
+                          (Equiv. USD ${cartTotal.toFixed(2)})
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <button
@@ -425,6 +489,29 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
                     }}
                   >
                     Proceder al Pago
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setQuoteModalOpen(true)}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      width: '100%',
+                      padding: '0.75rem',
+                      borderRadius: '6px',
+                      border: '1px solid var(--accent-green)',
+                      background: 'rgba(41, 192, 147, 0.08)',
+                      color: 'var(--accent-green)',
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                      cursor: 'pointer',
+                      transition: 'var(--transition-fast)'
+                    }}
+                  >
+                    <FileText size={16} /> Generar Presupuesto Formal (PDF)
                   </button>
                 </div>
               </div>
@@ -925,6 +1012,14 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
 
             </div>
           )}
+
+          {/* Quotation Generator Modal */}
+          <QuotationGenerator
+            isOpen={quoteModalOpen}
+            onClose={() => setQuoteModalOpen(false)}
+            cartItems={cartItems}
+            cartTotal={cartTotal}
+          />
 
         </div>
       </div>
