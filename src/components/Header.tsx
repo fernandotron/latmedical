@@ -352,15 +352,15 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
           >
             <ShoppingCart size={20} />
             {cartCount > 0 && (
-              <span className="badge-accent-green" style={{
+              <span className="badge-brand" style={{
                 position: 'absolute',
                 top: '-4px',
                 right: '-4px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                width: '18px',
-                height: '18px',
+                width: '19px',
+                height: '19px',
                 borderRadius: '50%',
                 fontSize: '0.7rem',
                 fontWeight: 'bold',

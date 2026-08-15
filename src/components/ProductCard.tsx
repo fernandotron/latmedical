@@ -94,7 +94,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
           pointerEvents: 'none',
           zIndex: 11
         }}>
-          <span className="badge badge-dark">{product.brand}</span>
+          <span className="badge badge-brand">{product.brand}</span>
           <span className="badge badge-accent-green">{product.category}</span>
         </div>
 
@@ -150,11 +150,11 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
         {/* View details quick trigger */}
         <div style={{
           fontSize: '0.8rem',
-          color: 'var(--accent-green)',
-          fontWeight: 600,
+          color: '#0891b2',
+          fontWeight: 700,
           display: 'inline-flex',
           alignItems: 'center',
-          gap: '0.25rem',
+          gap: '0.3rem',
           marginBottom: '1rem'
         }}>
           <Eye size={14} /> Ver Ficha Técnica Completa →
@@ -173,12 +173,13 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '0.78rem', color: 'var(--text-light)', fontWeight: 500 }}>Precio Profesional</span>
             <span style={{ 
-              fontSize: '0.9rem', 
-              color: 'var(--accent-green)', 
-              fontWeight: 700,
-              background: 'var(--accent-green-light)',
-              padding: '0.15rem 0.5rem',
-              borderRadius: '4px'
+              fontSize: '0.88rem', 
+              color: '#0891b2', 
+              fontWeight: 800,
+              background: 'rgba(3, 191, 215, 0.12)',
+              border: '1px solid rgba(3, 191, 215, 0.3)',
+              padding: '0.2rem 0.6rem',
+              borderRadius: '6px'
             }}>
               {(() => {
                 if (inv && inv.hasVariants && inv.variants && inv.variants.length > 0) {

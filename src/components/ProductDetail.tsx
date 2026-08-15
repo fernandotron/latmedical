@@ -274,7 +274,7 @@ export const ProductDetail: React.FC<ProductDetailProps> = ({ product, onBack, o
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {/* Brand and Category tags */}
             <div style={{ display: 'flex', gap: '0.5rem' }}>
-              <span className="badge badge-dark">{product.brand}</span>
+              <span className="badge badge-brand">{product.brand}</span>
               <span className="badge badge-accent-green">{product.category}</span>
             </div>
 

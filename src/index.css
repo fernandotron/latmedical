@@ -1,27 +1,33 @@
-/* Global Design System & Variables - Matched with Template Styles */
+/* Global Design System & Variables - Matched with Latmedical Brand Identity */
 :root {
-  /* Color Palette - Clinical Emerald & Medical Sky Blue */
-  --primary-dark: #111827;      /* Deep Slate Charcoal */
-  --primary-slate: #1F2937;     /* Slate */
-  --accent-green: #29c093;      /* Clinical Emerald Green */
-  --accent-blue: #2d9cda;       /* Medical Sky Blue */
-  --accent-green-light: rgba(41, 192, 147, 0.08);
-  --accent-blue-light: rgba(45, 156, 218, 0.08);
-  --accent-gradient: linear-gradient(135deg, #29c093 0%, #2d9cda 100%);
-  --accent-gradient-hover: linear-gradient(135deg, #2ed4a3 0%, #3caeeb 100%);
+  /* Color Palette - Latmedical Official Cyan & Medical Blue */
+  --primary-dark: #0f172a;      /* Deep Slate Charcoal */
+  --primary-slate: #1e293b;     /* Slate */
   
-  --bg-light: #F3F4F6;
+  /* Latmedical Logo Colors */
+  --latmedical-cyan: #03bfd7;   /* Official Latmedical Cyan */
+  --latmedical-cyan-hover: #00d2ec;
+  --latmedical-blue: #0284c7;   /* Medical Blue */
+  
+  --accent-green: #03bfd7;      /* Primary Accent: Latmedical Cyan */
+  --accent-blue: #0284c7;       /* Medical Sky Blue */
+  --accent-green-light: rgba(3, 191, 215, 0.1);
+  --accent-blue-light: rgba(2, 132, 199, 0.1);
+  --accent-gradient: linear-gradient(135deg, #03bfd7 0%, #0284c7 100%);
+  --accent-gradient-hover: linear-gradient(135deg, #00d2ec 0%, #039be5 100%);
+  
+  --bg-light: #F8FAFC;
   --bg-white: #FFFFFF;
   --bg-card: #FFFFFF;
-  --bg-clinic-gradient: radial-gradient(circle at 10% 20%, rgba(45, 156, 218, 0.05) 0%, rgba(243, 244, 246, 1) 90%);
+  --bg-clinic-gradient: radial-gradient(circle at 10% 20%, rgba(3, 191, 215, 0.05) 0%, rgba(248, 250, 252, 1) 90%);
   
-  --text-dark: #111827;
-  --text-medium: #4B5563;
-  --text-light: #9CA3AF;
+  --text-dark: #0f172a;
+  --text-medium: #475569;
+  --text-light: #94a3b8;
   --text-white: #FFFFFF;
   
-  --border-light: #E5E7EB;
-  --border-accent: rgba(41, 192, 147, 0.2);
+  --border-light: #E2E8F0;
+  --border-accent: rgba(3, 191, 215, 0.25);
   
   --success: #10B981;
   --danger: #EF4444;
@@ -32,9 +38,9 @@
 
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  --shadow-accent: 0 10px 20px -10px rgba(41, 192, 147, 0.4);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
+  --shadow-accent: 0 10px 20px -10px rgba(3, 191, 215, 0.45);
 
   /* Transitions */
   --transition-fast: 0.2s ease;
@@ -123,7 +129,7 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0.8rem 2rem;
   border-radius: 6px;
   cursor: pointer;
-  box-shadow: var(--shadow-sm);
+  box-shadow: 0 4px 12px rgba(3, 191, 215, 0.25);
   transition: var(--transition-fast);
   display: inline-flex;
   align-items: center;
@@ -134,15 +140,15 @@ h1, h2, h3, h4, h5, h6 {
 .btn-primary:hover {
   background: var(--accent-gradient-hover);
   transform: translateY(-1px);
-  box-shadow: var(--shadow-accent);
+  box-shadow: 0 6px 18px rgba(3, 191, 215, 0.4);
 }
 
 .btn-secondary {
   background: transparent;
-  color: var(--primary-slate);
-  border: 1px solid var(--accent-green);
+  color: var(--latmedical-cyan);
+  border: 1px solid var(--latmedical-cyan);
   font-family: var(--font-headings);
-  font-weight: 500;
+  font-weight: 600;
   padding: 0.8rem 2rem;
   border-radius: 6px;
   cursor: pointer;
@@ -154,43 +160,51 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .btn-secondary:hover {
-  background: var(--accent-green-light);
+  background: rgba(3, 191, 215, 0.1);
   transform: translateY(-1px);
 }
 
 .badge {
   display: inline-block;
   padding: 0.3rem 0.8rem;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
 
 .badge-accent-green {
-  background-color: var(--accent-green-light);
-  color: #1b8565;
-  border: 1px solid rgba(41, 192, 147, 0.2);
+  background-color: rgba(3, 191, 215, 0.12);
+  color: #0891b2;
+  border: 1px solid rgba(3, 191, 215, 0.3);
 }
 
 .badge-accent-blue {
-  background-color: var(--accent-blue-light);
-  color: #1c7ba8;
-  border: 1px solid rgba(45, 156, 218, 0.2);
+  background-color: rgba(2, 132, 199, 0.12);
+  color: #0284c7;
+  border: 1px solid rgba(2, 132, 199, 0.3);
 }
 
 .badge-dark {
-  background-color: var(--primary-slate);
+  background-color: #0f172a;
   color: var(--text-white);
+  border: 1px solid rgba(3, 191, 215, 0.25);
+}
+
+.badge-brand {
+  background: linear-gradient(135deg, #03bfd7 0%, #0284c7 100%);
+  color: #ffffff;
+  border: none;
+  box-shadow: 0 2px 6px rgba(3, 191, 215, 0.25);
 }
 
 /* Glassmorphism Header */
 .glass-header {
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(3, 191, 215, 0.12);
 }
 
 /* Custom Scrollbar */
@@ -201,11 +215,11 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--bg-light);
 }
 ::-webkit-scrollbar-thumb {
-  background: #D1D5DB;
+  background: #cbd5e1;
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-green);
+  background: var(--latmedical-cyan);
 }
 
 /* Form Styles */
@@ -217,9 +231,9 @@ input, select, textarea {
   transition: var(--transition-fast);
 }
 input:focus, select:focus, textarea:focus {
-  border-color: var(--accent-green);
+  border-color: var(--latmedical-cyan);
   outline: none;
-  box-shadow: 0 0 0 3px rgba(41, 192, 147, 0.15);
+  box-shadow: 0 0 0 3px rgba(3, 191, 215, 0.2);
 }
 
 /* Responsiveness adjustments */
