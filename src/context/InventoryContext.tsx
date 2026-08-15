@@ -175,9 +175,9 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const [clearanceOffers, setClearanceOffers] = useState<ClearanceOffer[]>(() => {
-    const isV3 = localStorage.getItem('latmedical_clearance_v3');
-    if (!isV3) {
-      localStorage.setItem('latmedical_clearance_v3', 'true');
+    const isV5 = localStorage.getItem('latmedical_clearance_v5');
+    if (!isV5) {
+      localStorage.setItem('latmedical_clearance_v5', 'true');
       localStorage.setItem('latmedical_clearance', JSON.stringify(defaultClearanceData));
       return defaultClearanceData as ClearanceOffer[];
     }
@@ -199,14 +199,20 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         if (Array.isArray(remoteData) && remoteData.length > 0) {
           setClearanceOffers((prevLocal) => {
             const map = new Map<string, ClearanceOffer>();
-            // 1. Keep all existing items in browser
-            prevLocal.forEach((item) => {
-              if (item && item.id) map.set(item.id, item);
+            // 1. Initialize with server definitions (ensuring new images/titles take effect)
+            remoteData.forEach((rItem: any) => {
+              if (rItem && rItem.id) {
+                const localItem = prevLocal.find(l => l.id === rItem.id);
+                map.set(rItem.id, {
+                  ...rItem,
+                  ...(localItem ? { stock: localItem.stock, active: localItem.active } : {})
+                });
+              }
             });
-            // 2. Merge server items if any are missing
-            remoteData.forEach((item: any) => {
-              if (item && item.id && !map.has(item.id)) {
-                map.set(item.id, item);
+            // 2. Keep any custom items created locally
+            prevLocal.forEach((lItem) => {
+              if (lItem && lItem.id && !map.has(lItem.id)) {
+                map.set(lItem.id, lItem);
               }
             });
             const merged = Array.from(map.values());
