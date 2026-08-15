@@ -30,7 +30,8 @@ import {
   Send,
   Printer,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  LogOut
 } from 'lucide-react';
 import defaultSettings from '../data/general_settings.json';
 import defaultSlides from '../data/home_slides.json';
@@ -1121,140 +1122,368 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
 
   // ── RENDER AUTHENTICATED ADMIN PANEL ──
   return (
-    <div style={{ padding: 'calc(var(--header-height) + 2rem) 0 6rem 0', animation: 'fadeIn 0.5s ease', background: '#f8fafc', minHeight: '100vh' }}>
-      <div className="container">
+    <div style={{ padding: 'calc(var(--header-height) + 1.5rem) 0 6rem 0', animation: 'fadeIn 0.5s ease', background: '#f8fafc', minHeight: '100vh' }}>
+      <div className="container" style={{ maxWidth: '1600px', width: '100%', padding: '0 1.25rem' }}>
         
-        {/* Admin Header */}
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          borderBottom: '1px solid var(--border-light)',
-          paddingBottom: '1.5rem',
-          marginBottom: '2rem',
-          flexWrap: 'wrap',
-          gap: '1rem'
-        }}>
-          <div>
-            <span className="badge badge-dark">Panel Administrativo B2B</span>
-            <h1 style={{ fontSize: '1.8rem', fontWeight: 800, margin: '0.5rem 0 0 0', color: 'var(--primary-dark)' }}>
-              Consola de Control Latmedical
-            </h1>
-          </div>
+        {/* Holded-Style 2-Column Dashboard Layout */}
+        <div className="admin-layout" style={{ display: 'flex', gap: '1.75rem', alignItems: 'flex-start' }}>
+          
+          {/* ============================================================== */}
+          {/* LEFT SIDEBAR (HOLDED ERP STYLE) */}
+          {/* ============================================================== */}
+          <aside className="admin-sidebar" style={{
+            width: '280px',
+            flexShrink: 0,
+            background: '#ffffff',
+            border: '1px solid var(--border-light)',
+            borderRadius: '16px',
+            padding: '1.5rem 1.25rem',
+            boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.05)',
+            position: 'sticky',
+            top: 'calc(var(--header-height) + 1.5rem)',
+            maxHeight: 'calc(100vh - var(--header-height) - 3rem)',
+            overflowY: 'auto',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '1.5rem'
+          }}>
+            
+            {/* Sidebar Brand Header */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', paddingBottom: '1.25rem', borderBottom: '1px solid #f1f5f9' }}>
+              <div style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '10px',
+                background: 'linear-gradient(135deg, var(--primary-dark) 0%, #0f172a 100%)',
+                color: '#ffffff',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                fontWeight: 900,
+                fontSize: '1.1rem',
+                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
+                flexShrink: 0
+              }}>
+                LM
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--primary-dark)', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
+                  Latmedical
+                </div>
+                <div style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.2rem' }}>
+                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#16a34a', display: 'inline-block', boxShadow: '0 0 0 2px #dcfce7' }}></span>
+                  Panel B2B Activo
+                </div>
+              </div>
+            </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <button
-              onClick={handleLogout}
-              style={{
-                background: 'none', border: '1.5px solid var(--border-light)',
-                borderRadius: '6px', padding: '0.5rem 1rem', fontSize: '0.78rem',
-                fontWeight: 700, cursor: 'pointer', color: 'var(--text-medium)',
-                fontFamily: 'inherit'
-              }}
-              onMouseOver={e => e.currentTarget.style.backgroundColor = '#f1f5f9'}
-              onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
-            >
-              Cerrar Sesión
-            </button>
+            {/* Navigation Groups */}
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              
+              {/* Group 1: Catálogo & Comercial */}
+              <div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0.5rem 0.5rem 0.5rem' }}>
+                  Gestión Comercial
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  
+                  {/* Tab: Inventario */}
+                  <button
+                    onClick={() => setActiveTab('inventory')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.7rem 0.85rem',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '0.84rem',
+                      fontWeight: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? 700 : 500,
+                      cursor: 'pointer',
+                      background: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '#f0fdf4' : 'transparent',
+                      color: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '#166534' : 'var(--text-dark)',
+                      boxShadow: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                      borderLeft: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '4px solid #16a34a' : '4px solid transparent',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'left',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <Package size={17} color={(activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '#16a34a' : '#64748b'} />
+                      <span>Inventario y Precios</span>
+                    </div>
+                  </button>
 
-            {/* Tab buttons switcher */}
-            <div style={{ display: 'flex', gap: '0.25rem', background: '#f1f5f9', padding: '0.25rem', borderRadius: '8px', border: '1px solid var(--border-light)' }}>
+                  {/* Tab: Lotes Outlet */}
+                  <button
+                    onClick={() => setActiveTab('clearance')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.7rem 0.85rem',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '0.84rem',
+                      fontWeight: activeTab === 'clearance' ? 700 : 500,
+                      cursor: 'pointer',
+                      background: activeTab === 'clearance' ? '#fef2f2' : 'transparent',
+                      color: activeTab === 'clearance' ? '#dc2626' : 'var(--text-dark)',
+                      boxShadow: activeTab === 'clearance' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                      borderLeft: activeTab === 'clearance' ? '4px solid #dc2626' : '4px solid transparent',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'left',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <Flame size={17} color={activeTab === 'clearance' ? '#dc2626' : '#64748b'} />
+                      <span>Lotes en Oferta</span>
+                    </div>
+                    <span style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '12px',
+                      background: activeTab === 'clearance' ? '#fee2e2' : '#f1f5f9',
+                      color: activeTab === 'clearance' ? '#b91c1c' : '#64748b'
+                    }}>
+                      {clearanceOffers.length}
+                    </span>
+                  </button>
+
+                  {/* Tab: Pedidos */}
+                  <button
+                    onClick={() => setActiveTab('orders')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.7rem 0.85rem',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '0.84rem',
+                      fontWeight: activeTab === 'orders' ? 700 : 500,
+                      cursor: 'pointer',
+                      background: activeTab === 'orders' ? '#f0fdf4' : 'transparent',
+                      color: activeTab === 'orders' ? '#166534' : 'var(--text-dark)',
+                      boxShadow: activeTab === 'orders' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                      borderLeft: activeTab === 'orders' ? '4px solid #16a34a' : '4px solid transparent',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'left',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <ClipboardList size={17} color={activeTab === 'orders' ? '#16a34a' : '#64748b'} />
+                      <span>Historial de Pedidos</span>
+                    </div>
+                    <span style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '12px',
+                      background: activeTab === 'orders' ? '#dcfce7' : '#f1f5f9',
+                      color: activeTab === 'orders' ? '#15803d' : '#64748b'
+                    }}>
+                      {orders.length}
+                    </span>
+                  </button>
+
+                </div>
+              </div>
+
+              {/* Group 2: Punto de Venta & Cotizaciones */}
+              <div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0.5rem 0.5rem 0.5rem' }}>
+                  Punto de Venta (POS)
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  
+                  {/* Tab: Manual Order (Holded ERP style) */}
+                  <button
+                    onClick={() => {
+                      setMoCreatedOrder(null);
+                      setActiveTab('manual-order');
+                    }}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.75rem 0.85rem',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '0.84rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      background: activeTab === 'manual-order' ? '#eff6ff' : '#f8fafc',
+                      color: activeTab === 'manual-order' ? '#1d4ed8' : '#2563eb',
+                      boxShadow: activeTab === 'manual-order' ? '0 1px 3px rgba(37, 99, 235, 0.1)' : 'none',
+                      borderLeft: activeTab === 'manual-order' ? '4px solid #2563eb' : '4px solid #93c5fd',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'left',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <Receipt size={17} color="#2563eb" />
+                      <span>+ Crear Venta / Pedido</span>
+                    </div>
+                    <span style={{
+                      fontSize: '0.62rem',
+                      fontWeight: 800,
+                      padding: '0.15rem 0.4rem',
+                      borderRadius: '4px',
+                      background: '#dbeafe',
+                      color: '#1e40af',
+                      textTransform: 'uppercase'
+                    }}>
+                      POS
+                    </span>
+                  </button>
+
+                </div>
+              </div>
+
+              {/* Group 3: Formularios & Configuración Web */}
+              <div>
+                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0.5rem 0.5rem 0.5rem' }}>
+                  Administración & Web
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  
+                  {/* Tab: Submissions */}
+                  <button
+                    onClick={() => setActiveTab('submissions')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.7rem 0.85rem',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '0.84rem',
+                      fontWeight: activeTab === 'submissions' ? 700 : 500,
+                      cursor: 'pointer',
+                      background: activeTab === 'submissions' ? '#f0fdf4' : 'transparent',
+                      color: activeTab === 'submissions' ? '#166534' : 'var(--text-dark)',
+                      boxShadow: activeTab === 'submissions' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                      borderLeft: activeTab === 'submissions' ? '4px solid #16a34a' : '4px solid transparent',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'left',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <FileText size={17} color={activeTab === 'submissions' ? '#16a34a' : '#64748b'} />
+                      <span>Formularios Web</span>
+                    </div>
+                    <span style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '12px',
+                      background: activeTab === 'submissions' ? '#dcfce7' : '#f1f5f9',
+                      color: activeTab === 'submissions' ? '#15803d' : '#64748b'
+                    }}>
+                      {submissions.length}
+                    </span>
+                  </button>
+
+                  {/* Tab: Settings */}
+                  <button
+                    onClick={() => setActiveTab('settings')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.7rem 0.85rem',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '0.84rem',
+                      fontWeight: activeTab === 'settings' ? 700 : 500,
+                      cursor: 'pointer',
+                      background: activeTab === 'settings' ? '#f0fdf4' : 'transparent',
+                      color: activeTab === 'settings' ? '#166534' : 'var(--text-dark)',
+                      boxShadow: activeTab === 'settings' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                      borderLeft: activeTab === 'settings' ? '4px solid #16a34a' : '4px solid transparent',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'left',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <Settings size={17} color={activeTab === 'settings' ? '#16a34a' : '#64748b'} />
+                      <span>Configuración Web</span>
+                    </div>
+                  </button>
+
+                </div>
+              </div>
+
+            </nav>
+
+            {/* Sidebar Footer / User Profile & Logout */}
+            <div style={{ marginTop: 'auto', paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#e2e8f0', color: 'var(--primary-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.78rem' }}>
+                  <User size={16} />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary-dark)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    Admin Principal
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-light)' }}>
+                    Acceso Total
+                  </div>
+                </div>
+              </div>
+
               <button
-                onClick={() => setActiveTab('inventory')}
+                onClick={handleLogout}
                 style={{
-                  display: 'flex', alignItems: 'center', gap: '0.4rem',
-                  padding: '0.5rem 1.1rem', border: 'none', borderRadius: '6px',
-                  fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
-                  background: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '#ffffff' : 'transparent',
-                  color: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? 'var(--accent-green)' : 'var(--text-medium)',
-                  boxShadow: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? 'var(--shadow-sm)' : 'none',
-                  transition: 'var(--transition-fast)',
+                  width: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.45rem',
+                  padding: '0.6rem',
+                  background: '#f8fafc',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  color: '#dc2626',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease',
                   fontFamily: 'inherit'
                 }}
-              >
-                <Package size={14} /> Inventario y Precios
-              </button>
-              <button
-                onClick={() => setActiveTab('clearance')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.4rem',
-                  padding: '0.5rem 1.1rem', border: 'none', borderRadius: '6px',
-                  fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
-                  background: activeTab === 'clearance' ? '#ffffff' : 'transparent',
-                  color: activeTab === 'clearance' ? '#dc2626' : 'var(--text-medium)',
-                  boxShadow: activeTab === 'clearance' ? 'var(--shadow-sm)' : 'none',
-                  transition: 'var(--transition-fast)',
-                  fontFamily: 'inherit'
+                onMouseOver={e => {
+                  e.currentTarget.style.backgroundColor = '#fef2f2';
+                  e.currentTarget.style.borderColor = '#fca5a5';
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.backgroundColor = '#f8fafc';
+                  e.currentTarget.style.borderColor = '#e2e8f0';
                 }}
               >
-                <Flame size={14} color={activeTab === 'clearance' ? '#dc2626' : 'currentColor'} /> Lotes en Oferta ({clearanceOffers.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('orders')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.4rem',
-                  padding: '0.5rem 1.1rem', border: 'none', borderRadius: '6px',
-                  fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
-                  background: activeTab === 'orders' ? '#ffffff' : 'transparent',
-                  color: activeTab === 'orders' ? 'var(--accent-green)' : 'var(--text-medium)',
-                  boxShadow: activeTab === 'orders' ? 'var(--shadow-sm)' : 'none',
-                  transition: 'var(--transition-fast)',
-                  fontFamily: 'inherit'
-                }}
-              >
-                <ClipboardList size={14} /> Pedidos ({orders.length})
-              </button>
-              <button
-                onClick={() => {
-                  setMoCreatedOrder(null);
-                  setActiveTab('manual-order');
-                }}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.4rem',
-                  padding: '0.5rem 1.1rem', border: 'none', borderRadius: '6px',
-                  fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
-                  background: activeTab === 'manual-order' ? '#2563eb' : 'transparent',
-                  color: activeTab === 'manual-order' ? '#ffffff' : '#2563eb',
-                  boxShadow: activeTab === 'manual-order' ? 'var(--shadow-sm)' : 'none',
-                  transition: 'var(--transition-fast)',
-                  fontFamily: 'inherit'
-                }}
-              >
-                <Receipt size={14} color={activeTab === 'manual-order' ? '#ffffff' : '#2563eb'} /> + Crear Venta / Pedido
-              </button>
-              <button
-                onClick={() => setActiveTab('submissions')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.4rem',
-                  padding: '0.5rem 1.1rem', border: 'none', borderRadius: '6px',
-                  fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
-                  background: activeTab === 'submissions' ? '#ffffff' : 'transparent',
-                  color: activeTab === 'submissions' ? 'var(--accent-green)' : 'var(--text-medium)',
-                  boxShadow: activeTab === 'submissions' ? 'var(--shadow-sm)' : 'none',
-                  transition: 'var(--transition-fast)',
-                  fontFamily: 'inherit'
-                }}
-              >
-                <ClipboardList size={14} /> Formularios ({submissions.length})
-              </button>
-              <button
-                onClick={() => setActiveTab('settings')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: '0.4rem',
-                  padding: '0.5rem 1.1rem', border: 'none', borderRadius: '6px',
-                  fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
-                  background: activeTab === 'settings' ? '#ffffff' : 'transparent',
-                  color: activeTab === 'settings' ? 'var(--accent-green)' : 'var(--text-medium)',
-                  boxShadow: activeTab === 'settings' ? 'var(--shadow-sm)' : 'none',
-                  transition: 'var(--transition-fast)',
-                  fontFamily: 'inherit'
-                }}
-              >
-                <Settings size={14} /> Configuración Web
+                <LogOut size={15} /> Cerrar Sesión
               </button>
             </div>
-          </div>
-        </div>
+
+          </aside>
+
+          {/* ============================================================== */}
+          {/* RIGHT MAIN CONTENT AREA */}
+          {/* ============================================================== */}
+          <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
         {/* ============================================================== */}
         {/* EDIT / CREATE PRODUCT: FULL-SCREEN VIEWS */}
@@ -4077,6 +4306,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
           </form>
         )}
 
+          </main>
+        </div>
+
         {/* Stock PDF / Excel Report Modal */}
         <StockReportModal
           isOpen={isStockReportOpen}
@@ -4091,6 +4323,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
       </div>
 
       <style>{`
+        @media (max-width: 1024px) {
+          .admin-layout {
+            flex-direction: column !important;
+          }
+          .admin-sidebar {
+            width: 100% !important;
+            position: static !important;
+            max-height: none !important;
+          }
+        }
+        
         @media (min-width: 768px) {
           .order-details-grid {
             grid-template-columns: 1.1fr 0.9fr !important;
