@@ -100,9 +100,20 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return saved ? JSON.parse(saved) : defaultInventory;
   });
 
+  const getDeletedOrderIds = (): Set<string> => {
+    try {
+      const saved = localStorage.getItem('latmedical_deleted_order_ids');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  };
+
   const [orders, setOrders] = useState<Order[]>(() => {
+    const deletedIds = getDeletedOrderIds();
     const saved = localStorage.getItem('latmedical_orders');
-    return saved ? JSON.parse(saved) : defaultOrders;
+    const initialList: Order[] = saved ? JSON.parse(saved) : defaultOrders;
+    return initialList.filter(o => o && o.id && !deletedIds.has(o.id));
   });
 
   // Sync orders from server on mount so admin sees orders placed on all devices
@@ -117,13 +128,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       })
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
+          const deletedIds = getDeletedOrderIds();
           setOrders((prevOrders) => {
             const map = new Map<string, Order>();
             prevOrders.forEach((o) => {
-              if (o && o.id) map.set(o.id, o);
+              if (o && o.id && !deletedIds.has(o.id)) map.set(o.id, o);
             });
             data.forEach((o: any) => {
-              if (o && o.id) map.set(o.id, o);
+              if (o && o.id && !deletedIds.has(o.id)) map.set(o.id, o);
             });
             const merged = Array.from(map.values());
             localStorage.setItem('latmedical_orders', JSON.stringify(merged));
@@ -380,9 +392,16 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const addOrder = (orderData: Omit<Order, 'id' | 'date' | 'status'> & { status?: Order['status'] }) => {
+    const newId = `LM-${Math.floor(100000 + Math.random() * 900000)}`;
+    const deletedIds = getDeletedOrderIds();
+    if (deletedIds.has(newId)) {
+      deletedIds.delete(newId);
+      localStorage.setItem('latmedical_deleted_order_ids', JSON.stringify(Array.from(deletedIds)));
+    }
+
     const newOrder: Order = {
       ...orderData,
-      id: `LM-${Math.floor(100000 + Math.random() * 900000)}`,
+      id: newId,
       date: new Date().toLocaleDateString('es-AR', {
         year: 'numeric',
         month: 'short',
@@ -438,12 +457,20 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const deleteOrder = (orderId: string) => {
+    // 1. Permanently record deleted ID so remote sync or reload never brings it back
+    const deletedIds = getDeletedOrderIds();
+    deletedIds.add(orderId);
+    localStorage.setItem('latmedical_deleted_order_ids', JSON.stringify(Array.from(deletedIds)));
+
     setOrders((prevOrders) => {
       const orderToDelete = prevOrders.find((o) => o.id === orderId);
+      // Restore stock only if order was previously decremented and not cancelled
       if (orderToDelete && (orderToDelete.stockDecremented ?? true) && orderToDelete.status !== 'Cancelado') {
         incrementStockForOrder(orderToDelete.items);
       }
-      return prevOrders.filter((o) => o.id !== orderId);
+      const updated = prevOrders.filter((o) => o.id !== orderId);
+      localStorage.setItem('latmedical_orders', JSON.stringify(updated));
+      return updated;
     });
   };
 

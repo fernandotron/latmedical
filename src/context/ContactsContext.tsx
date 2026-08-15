@@ -36,15 +36,27 @@ interface ContactsContextType {
 const ContactsContext = createContext<ContactsContextType | undefined>(undefined);
 
 export const ContactsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const getDeletedContactIds = (): Set<string> => {
+    try {
+      const saved = localStorage.getItem('latmedical_deleted_contact_ids');
+      return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch {
+      return new Set();
+    }
+  };
+
   const [contacts, setContacts] = useState<Contact[]>(() => {
+    const deletedIds = getDeletedContactIds();
     const isV1 = localStorage.getItem('latmedical_contacts_v1');
     if (!isV1) {
       localStorage.setItem('latmedical_contacts_v1', 'true');
-      localStorage.setItem('latmedical_contacts', JSON.stringify(defaultContactsData));
-      return defaultContactsData as Contact[];
+      const filteredDefaults = (defaultContactsData as Contact[]).filter(c => !deletedIds.has(c.id));
+      localStorage.setItem('latmedical_contacts', JSON.stringify(filteredDefaults));
+      return filteredDefaults;
     }
     const saved = localStorage.getItem('latmedical_contacts');
-    return saved ? JSON.parse(saved) : (defaultContactsData as Contact[]);
+    const initial: Contact[] = saved ? JSON.parse(saved) : (defaultContactsData as Contact[]);
+    return initial.filter(c => c && c.id && !deletedIds.has(c.id));
   });
 
   // Sync contacts remotely
@@ -59,11 +71,14 @@ export const ContactsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       })
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {
+          const deletedIds = getDeletedContactIds();
           setContacts((prev) => {
             const map = new Map<string, Contact>();
-            prev.forEach((c) => map.set(c.id, c));
+            prev.forEach((c) => {
+              if (c && c.id && !deletedIds.has(c.id)) map.set(c.id, c);
+            });
             data.forEach((c: Contact) => {
-              if (c && c.id) map.set(c.id, c);
+              if (c && c.id && !deletedIds.has(c.id)) map.set(c.id, c);
             });
             const merged = Array.from(map.values());
             localStorage.setItem('latmedical_contacts', JSON.stringify(merged));
@@ -84,9 +99,16 @@ export const ContactsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, [contacts]);
 
   const addContact = (contactData: Omit<Contact, 'id' | 'createdAt' | 'timestamp'>): Contact => {
+    const newId = `CNT-${Math.floor(100000 + Math.random() * 900000)}`;
+    const deletedIds = getDeletedContactIds();
+    if (deletedIds.has(newId)) {
+      deletedIds.delete(newId);
+      localStorage.setItem('latmedical_deleted_contact_ids', JSON.stringify(Array.from(deletedIds)));
+    }
+
     const newContact: Contact = {
       ...contactData,
-      id: `CNT-${Math.floor(100000 + Math.random() * 900000)}`,
+      id: newId,
       createdAt: new Date().toLocaleDateString('es-AR', {
         year: 'numeric',
         month: 'short',
@@ -106,7 +128,15 @@ export const ContactsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   const deleteContact = (id: string) => {
-    setContacts((prev) => prev.filter((c) => c.id !== id));
+    const deletedIds = getDeletedContactIds();
+    deletedIds.add(id);
+    localStorage.setItem('latmedical_deleted_contact_ids', JSON.stringify(Array.from(deletedIds)));
+
+    setContacts((prev) => {
+      const updated = prev.filter((c) => c.id !== id);
+      localStorage.setItem('latmedical_contacts', JSON.stringify(updated));
+      return updated;
+    });
   };
 
   // Automatically creates or updates contact when a client places an order
