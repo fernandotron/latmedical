@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { CartProvider } from './context/CartContext';
 import { InventoryProvider } from './context/InventoryContext';
 import { ContactsProvider } from './context/ContactsContext';
+import { TrashProvider } from './context/TrashContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -452,8 +453,9 @@ const App: React.FC = () => {
   return (
     <InventoryProvider>
       <ContactsProvider>
-        <CartProvider>
-          <CurrencyProvider>
+        <TrashProvider>
+          <CartProvider>
+            <CurrencyProvider>
           {/* WordPress style top admin bar */}
         {isAdminLoggedIn && (
           <div style={{
@@ -2012,8 +2014,9 @@ const App: React.FC = () => {
         `}</style>
         </CurrencyProvider>
       </CartProvider>
-    </ContactsProvider>
-  </InventoryProvider>
+    </TrashProvider>
+  </ContactsProvider>
+</InventoryProvider>
   );
 };
 

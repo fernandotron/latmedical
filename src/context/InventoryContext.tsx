@@ -77,9 +77,11 @@ interface InventoryContextType {
   updateOrder: (orderId: string, updated: Partial<Order>) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   deleteOrder: (orderId: string) => void;
+  restoreOrder: (order: Order) => void;
   addClearanceOffer: (offer: Omit<ClearanceOffer, 'id'>) => ClearanceOffer;
   updateClearanceOffer: (id: string, updated: Partial<ClearanceOffer>) => void;
   deleteClearanceOffer: (id: string) => void;
+  restoreClearanceOffer: (offer: ClearanceOffer) => void;
   toggleClearanceOffer: (id: string) => void;
 }
 
@@ -474,6 +476,33 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     });
   };
 
+  const restoreOrder = (order: Order) => {
+    // 1. Remove from deleted IDs
+    const deletedIds = getDeletedOrderIds();
+    deletedIds.delete(order.id);
+    localStorage.setItem('latmedical_deleted_order_ids', JSON.stringify(Array.from(deletedIds)));
+
+    // 2. Decrement stock if order is active and not cancelled
+    if (order.status !== 'Cancelado') {
+      decrementStockForOrder(order.items);
+    }
+
+    // 3. Add back to orders
+    setOrders((prevOrders) => {
+      if (prevOrders.some(o => o.id === order.id)) return prevOrders;
+      const updated = [order, ...prevOrders];
+      localStorage.setItem('latmedical_orders', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const restoreClearanceOffer = (offer: ClearanceOffer) => {
+    setClearanceOffers((prev) => {
+      if (prev.some(o => o.id === offer.id)) return prev;
+      return [offer, ...prev];
+    });
+  };
+
   return (
     <InventoryContext.Provider value={{
       inventory,
@@ -485,9 +514,11 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       updateOrder,
       updateOrderStatus,
       deleteOrder,
+      restoreOrder,
       addClearanceOffer,
       updateClearanceOffer,
       deleteClearanceOffer,
+      restoreClearanceOffer,
       toggleClearanceOffer
     }}>
       {children}

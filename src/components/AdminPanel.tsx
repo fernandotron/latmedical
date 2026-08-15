@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useInventory, Order } from '../context/InventoryContext';
+import { useInventory, Order, ClearanceOffer } from '../context/InventoryContext';
 import { products, Product } from '../data/products';
 import { 
   Package, 
@@ -34,14 +34,18 @@ import {
   LogOut,
   Users,
   UserPlus,
-  MessageSquare
+  MessageSquare,
+  RotateCcw,
+  Clock,
+  Archive
 } from 'lucide-react';
 import defaultSettings from '../data/general_settings.json';
 import defaultSlides from '../data/home_slides.json';
 import { StockReportModal } from './StockReportModal';
 import { useContacts, Contact } from '../context/ContactsContext';
+import { useTrash, TrashItem, TrashItemType } from '../context/TrashContext';
 
-type AdminTab = 'inventory' | 'clearance' | 'orders' | 'manual-order' | 'contacts' | 'settings' | 'submissions' | 'add-product' | 'edit-product';
+type AdminTab = 'inventory' | 'clearance' | 'orders' | 'manual-order' | 'contacts' | 'trash' | 'settings' | 'submissions' | 'add-product' | 'edit-product';
 
 interface AdminPanelProps {
   isAdminLoggedIn: boolean;
@@ -56,15 +60,19 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
     updateStock, 
     updateOrderStatus, 
     deleteOrder,
+    restoreOrder,
     addOrder,
     updateOrder,
     addClearanceOffer,
     updateClearanceOffer,
     deleteClearanceOffer,
+    restoreClearanceOffer,
     toggleClearanceOffer
   } = useInventory();
-  const { contacts, addContact, updateContact, deleteContact, saveContactFromOrder } = useContacts();
+  const { contacts, addContact, updateContact, deleteContact, restoreContact, saveContactFromOrder } = useContacts();
+  const { trashItems, addToTrash, removeFromTrash, emptyTrash, getDaysRemaining } = useTrash();
   const [activeTab, setActiveTab] = useState<AdminTab>('inventory');
+  const [trashFilterType, setTrashFilterType] = useState<TrashItemType | 'all'>('all');
   
   // Expanded Orders state for collapsing/expanding
   const [expandedOrders, setExpandedOrders] = useState<Record<string, boolean>>({});
@@ -391,6 +399,76 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
       });
     }
     setIsContactModalOpen(false);
+  };
+
+  // Delete Order with Confirmation & Trash Archiving
+  const handleDeleteOrderWithConfirm = (order: Order) => {
+    const confirmMsg = `¿Estás seguro de que deseas eliminar el pedido "${order.id}" de ${order.fullName}?\n\nLos insumos se reintegrarán al inventario y el pedido se conservará en la Papelera durante 30 días para su recuperación.`;
+    if (window.confirm(confirmMsg)) {
+      addToTrash({
+        originalId: order.id,
+        type: 'order',
+        title: `Pedido ${order.id} - ${order.fullName}`,
+        description: `${order.items.length} productos | Total: USD $${order.total.toFixed(2)} | Estado: ${order.status}`,
+        data: order
+      });
+      deleteOrder(order.id);
+    }
+  };
+
+  // Delete Contact with Confirmation & Trash Archiving
+  const handleDeleteContactWithConfirm = (cnt: Contact) => {
+    const confirmMsg = `¿Estás seguro de que deseas eliminar a "${cnt.fullName}" del directorio?\n\nSe conservará en la Papelera durante 30 días para su recuperación.`;
+    if (window.confirm(confirmMsg)) {
+      addToTrash({
+        originalId: cnt.id,
+        type: 'contact',
+        title: `Contacto: ${cnt.fullName}`,
+        description: `${cnt.specialty || 'Profesional'} | Tel: ${cnt.phone} | ${cnt.city || 'CABA'}, ${cnt.province || 'Buenos Aires'}`,
+        data: cnt
+      });
+      deleteContact(cnt.id);
+    }
+  };
+
+  // Delete Clearance Offer with Confirmation & Trash Archiving
+  const handleDeleteClearanceWithConfirm = (offer: ClearanceOffer) => {
+    const offerTitle = `${offer.productName}${offer.variantName ? ` (${offer.variantName})` : ''}`;
+    const confirmMsg = `¿Estás seguro de que deseas eliminar la oferta "${offerTitle}"?\n\nSe conservará en la Papelera durante 30 días para su recuperación.`;
+    if (window.confirm(confirmMsg)) {
+      addToTrash({
+        originalId: offer.id,
+        type: 'clearance',
+        title: `Oferta Lote: ${offerTitle}`,
+        description: `Lote ${offer.batchNumber || 'N/A'} | Vence: ${offer.expiryDate} | Oferta: USD $${offer.clearancePrice} | Stock: ${offer.stock} disp.`,
+        data: offer
+      });
+      deleteClearanceOffer(offer.id);
+    }
+  };
+
+  // Restore Item from Trash
+  const handleRestoreTrashItem = (item: TrashItem) => {
+    if (item.type === 'order') {
+      restoreOrder(item.data);
+      removeFromTrash(item.id);
+      alert(`✓ El pedido "${item.originalId}" ha sido restaurado exitosamente y su stock ha sido actualizado.`);
+    } else if (item.type === 'contact') {
+      restoreContact(item.data);
+      removeFromTrash(item.id);
+      alert(`✓ El contacto "${item.title}" ha sido restaurado exitosamente.`);
+    } else if (item.type === 'clearance') {
+      restoreClearanceOffer(item.data);
+      removeFromTrash(item.id);
+      alert(`✓ La oferta de lote ha sido restaurada exitosamente.`);
+    }
+  };
+
+  // Permanently Delete from Trash
+  const handlePermanentDeleteTrashItem = (item: TrashItem) => {
+    if (window.confirm(`¿Desea eliminar definitivamente "${item.title}"?\n\nEsta acción NO se puede deshacer.`)) {
+      removeFromTrash(item.id);
+    }
   };
 
   // Success Feedback & Editing State
@@ -1563,6 +1641,47 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                     }}>
                       {contacts.length}
                     </span>
+                  </button>
+
+                  {/* Tab: Papelera de Reciclaje */}
+                  <button
+                    onClick={() => setActiveTab('trash')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.7rem 0.85rem',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '0.84rem',
+                      fontWeight: activeTab === 'trash' ? 700 : 500,
+                      cursor: 'pointer',
+                      background: activeTab === 'trash' ? '#fff7ed' : 'transparent',
+                      color: activeTab === 'trash' ? '#ea580c' : 'var(--text-dark)',
+                      boxShadow: activeTab === 'trash' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                      borderLeft: activeTab === 'trash' ? '4px solid #ea580c' : '4px solid transparent',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'left',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <Trash2 size={17} color={activeTab === 'trash' ? '#ea580c' : '#64748b'} />
+                      <span>Papelera Reciclaje</span>
+                    </div>
+                    {trashItems.length > 0 && (
+                      <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 800,
+                        padding: '0.15rem 0.5rem',
+                        borderRadius: '12px',
+                        background: activeTab === 'trash' ? '#ffedd5' : '#fee2e2',
+                        color: activeTab === 'trash' ? '#c2410c' : '#dc2626'
+                      }}>
+                        {trashItems.length}
+                      </span>
+                    )}
                   </button>
 
                 </div>
@@ -2999,11 +3118,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
 
                               <button
                                 type="button"
-                                onClick={() => {
-                                  if (window.confirm('¿Desea eliminar esta oferta de lote?')) {
-                                    deleteClearanceOffer(offer.id);
-                                  }
-                                }}
+                                onClick={() => handleDeleteClearanceWithConfirm(offer)}
                                 style={{
                                   background: 'none',
                                   border: 'none',
@@ -3011,7 +3126,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                                   cursor: 'pointer',
                                   padding: '0.3rem'
                                 }}
-                                title="Eliminar oferta"
+                                title="Eliminar oferta y mover a la papelera"
                               >
                                 <Trash2 size={16} />
                               </button>
@@ -4249,7 +4364,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                             )}
                             
                             <button
-                              onClick={() => deleteOrder(order.id)}
+                              onClick={() => handleDeleteOrderWithConfirm(order)}
                               style={{
                                 background: 'none', border: 'none', color: 'var(--danger)',
                                 cursor: 'pointer', display: 'flex', alignItems: 'center',
@@ -4258,7 +4373,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                               }}
                               onMouseOver={e => e.currentTarget.style.backgroundColor = '#fee2e2'}
                               onMouseOut={e => e.currentTarget.style.backgroundColor = 'transparent'}
-                              title="Eliminar Pedido"
+                              title="Eliminar Pedido y mover a la papelera"
                             >
                               <Trash2 size={16} />
                             </button>
@@ -4743,11 +4858,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                                   {/* Delete Contact Button */}
                                   <button
                                     type="button"
-                                    onClick={() => {
-                                      if (window.confirm(`¿Desea eliminar a "${cnt.fullName}" del directorio de contactos?`)) {
-                                        deleteContact(cnt.id);
-                                      }
-                                    }}
+                                    onClick={() => handleDeleteContactWithConfirm(cnt)}
                                     style={{
                                       background: '#fee2e2',
                                       border: 'none',
@@ -4761,10 +4872,352 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                                     }}
                                     onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fecaca'}
                                     onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fee2e2'}
-                                    title="Eliminar contacto"
+                                    title="Eliminar contacto y mover a la papelera"
                                   >
                                     <Trash2 size={13} />
                                   </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          );
+        })()}
+
+        {/* ============================================================== */}
+        {/* TAB: PAPELERA DE RECICLAJE / TRASH (30 DAYS RETENTION) */}
+        {/* ============================================================== */}
+        {activeTab === 'trash' && (() => {
+          const filteredTrash = trashItems.filter(item => {
+            if (trashFilterType === 'all') return true;
+            return item.type === trashFilterType;
+          });
+
+          const ordersCount = trashItems.filter(t => t.type === 'order').length;
+          const contactsCount = trashItems.filter(t => t.type === 'contact').length;
+          const clearanceCount = trashItems.filter(t => t.type === 'clearance').length;
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'fadeIn 0.4s ease' }}>
+              
+              {/* Header Banner */}
+              <div style={{
+                background: '#ffffff',
+                border: '1px solid var(--border-light)',
+                borderRadius: '12px',
+                padding: '1.25rem 1.5rem',
+                boxShadow: 'var(--shadow-sm)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}>
+                <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #f97316 0%, #ea580c 100%)',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <Trash2 size={22} />
+                  </div>
+                  <div>
+                    <h2 style={{ margin: '0 0 0.2rem 0', fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
+                      Papelera de Reciclaje
+                    </h2>
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-medium)' }}>
+                      Los pedidos, contactos y lotes eliminados se guardan aquí durante <strong>30 días</strong>. Puedes restaurarlos en cualquier momento o eliminarlos definitivamente.
+                    </p>
+                  </div>
+                </div>
+
+                {trashItems.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (window.confirm('¿Estás seguro de que deseas VACIAR completamente la papelera?\n\nTodos los elementos se eliminarán de forma permanente y NO se podrán recuperar.')) {
+                        emptyTrash();
+                      }
+                    }}
+                    style={{
+                      background: '#fee2e2',
+                      color: '#dc2626',
+                      border: '1px solid #fca5a5',
+                      borderRadius: '8px',
+                      padding: '0.6rem 1.15rem',
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <Trash2 size={15} /> Vaciar Papelera ({trashItems.length})
+                  </button>
+                )}
+              </div>
+
+              {/* Filter Pills Toolbar */}
+              <div style={{
+                background: '#ffffff',
+                border: '1px solid var(--border-light)',
+                borderRadius: '10px',
+                padding: '0.75rem 1.25rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.75rem'
+              }}>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setTrashFilterType('all')}
+                    style={{
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: trashFilterType === 'all' ? '#1e293b' : '#f1f5f9',
+                      color: trashFilterType === 'all' ? '#ffffff' : '#64748b',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    Todos ({trashItems.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTrashFilterType('order')}
+                    style={{
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: trashFilterType === 'order' ? '#2563eb' : '#eff6ff',
+                      color: trashFilterType === 'order' ? '#ffffff' : '#2563eb',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    Pedidos ({ordersCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTrashFilterType('contact')}
+                    style={{
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: trashFilterType === 'contact' ? '#16a34a' : '#f0fdf4',
+                      color: trashFilterType === 'contact' ? '#ffffff' : '#16a34a',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    Contactos ({contactsCount})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setTrashFilterType('clearance')}
+                    style={{
+                      padding: '0.4rem 0.85rem',
+                      borderRadius: '8px',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      border: 'none',
+                      cursor: 'pointer',
+                      background: trashFilterType === 'clearance' ? '#ea580c' : '#fff7ed',
+                      color: trashFilterType === 'clearance' ? '#ffffff' : '#ea580c',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    Lotes en Oferta ({clearanceCount})
+                  </button>
+                </div>
+
+                <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                  <Clock size={14} color="#f97316" />
+                  <span>Periodo de retención: <strong>30 días</strong></span>
+                </div>
+              </div>
+
+              {/* Trash Items List / Table */}
+              {filteredTrash.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '4.5rem 2rem',
+                  background: '#ffffff',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '12px',
+                  color: 'var(--text-medium)'
+                }}>
+                  <Archive size={46} style={{ opacity: 0.3, marginBottom: '1rem', color: '#94a3b8' }} />
+                  <h3 style={{ margin: '0 0 0.4rem 0', fontWeight: 700, fontSize: '1.1rem' }}>
+                    {trashItems.length === 0 ? 'La papelera está vacía' : 'No hay elementos de esta categoría en la papelera'}
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--text-light)' }}>
+                    Cualquier pedido, contacto o lote que elimines aparecerá aquí para que puedas recuperarlo cuando lo necesites.
+                  </p>
+                </div>
+              ) : (
+                <div style={{
+                  background: '#ffffff',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-light)', color: 'var(--text-medium)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          <th style={{ padding: '0.85rem 1.25rem' }}>Tipo</th>
+                          <th style={{ padding: '0.85rem 1.25rem' }}>Elemento Eliminado</th>
+                          <th style={{ padding: '0.85rem 1rem' }}>Fecha de Eliminación</th>
+                          <th style={{ padding: '0.85rem 1rem' }}>Tiempo Restante</th>
+                          <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>Acciones de Recuperación</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredTrash.map((item, idx) => {
+                          const daysLeft = getDaysRemaining(item.expiresAt);
+                          const deletedDateStr = new Date(item.deletedAt).toLocaleDateString('es-AR', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                          });
+
+                          return (
+                            <tr key={item.id} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                              {/* Type Badge */}
+                              <td style={{ padding: '0.85rem 1.25rem' }}>
+                                {item.type === 'order' && (
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '0.2rem 0.55rem', borderRadius: '12px', background: '#eff6ff', color: '#1d4ed8', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                                    <ClipboardList size={12} /> Pedido
+                                  </span>
+                                )}
+                                {item.type === 'contact' && (
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '0.2rem 0.55rem', borderRadius: '12px', background: '#f0fdf4', color: '#15803d', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                                    <Users size={12} /> Contacto
+                                  </span>
+                                )}
+                                {item.type === 'clearance' && (
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 800, padding: '0.2rem 0.55rem', borderRadius: '12px', background: '#fff7ed', color: '#c2410c', display: 'inline-flex', alignItems: 'center', gap: '0.3rem' }}>
+                                    <Flame size={12} /> Lote Outlet
+                                  </span>
+                                )}
+                              </td>
+
+                              {/* Title & Details */}
+                              <td style={{ padding: '0.85rem 1.25rem' }}>
+                                <div style={{ fontWeight: 800, color: 'var(--primary-dark)', fontSize: '0.88rem' }}>
+                                  {item.title}
+                                </div>
+                                {item.description && (
+                                  <div style={{ fontSize: '0.75rem', color: 'var(--text-medium)', marginTop: '0.15rem' }}>
+                                    {item.description}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Deleted Date */}
+                              <td style={{ padding: '0.85rem 1rem', color: 'var(--text-medium)' }}>
+                                <div style={{ fontSize: '0.8rem', fontWeight: 600 }}>{deletedDateStr}</div>
+                              </td>
+
+                              {/* Days Remaining */}
+                              <td style={{ padding: '0.85rem 1rem' }}>
+                                <div style={{
+                                  display: 'inline-flex',
+                                  alignItems: 'center',
+                                  gap: '0.3rem',
+                                  fontSize: '0.76rem',
+                                  fontWeight: 700,
+                                  color: daysLeft <= 5 ? '#dc2626' : '#ea580c',
+                                  background: daysLeft <= 5 ? '#fee2e2' : '#ffedd5',
+                                  padding: '0.2rem 0.55rem',
+                                  borderRadius: '6px'
+                                }}>
+                                  <Clock size={12} />
+                                  <span>{daysLeft} {daysLeft === 1 ? 'día restante' : 'días restantes'}</span>
+                                </div>
+                              </td>
+
+                              {/* Action Buttons */}
+                              <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                  
+                                  {/* Restore Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRestoreTrashItem(item)}
+                                    style={{
+                                      background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                                      color: '#ffffff',
+                                      border: 'none',
+                                      borderRadius: '6px',
+                                      padding: '0.4rem 0.85rem',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 800,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.35rem',
+                                      fontFamily: 'inherit',
+                                      boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)'
+                                    }}
+                                    title="Restaurar este elemento al sistema activo"
+                                  >
+                                    <RotateCcw size={13} /> Restaurar
+                                  </button>
+
+                                  {/* Permanent Delete Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handlePermanentDeleteTrashItem(item)}
+                                    style={{
+                                      background: '#f8fafc',
+                                      border: '1px solid #cbd5e1',
+                                      color: '#dc2626',
+                                      borderRadius: '6px',
+                                      padding: '0.4rem 0.65rem',
+                                      fontSize: '0.78rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.25rem',
+                                      fontFamily: 'inherit'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                    title="Eliminar permanentemente"
+                                  >
+                                    <Trash2 size={13} /> Eliminar
+                                  </button>
+
                                 </div>
                               </td>
                             </tr>

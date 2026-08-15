@@ -21,6 +21,7 @@ interface ContactsContextType {
   addContact: (contactData: Omit<Contact, 'id' | 'createdAt' | 'timestamp'>) => Contact;
   updateContact: (id: string, updatedData: Partial<Contact>) => void;
   deleteContact: (id: string) => void;
+  restoreContact: (contact: Contact) => void;
   saveContactFromOrder: (orderData: {
     fullName: string;
     phone: string;
@@ -139,6 +140,19 @@ export const ContactsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     });
   };
 
+  const restoreContact = (contact: Contact) => {
+    const deletedIds = getDeletedContactIds();
+    deletedIds.delete(contact.id);
+    localStorage.setItem('latmedical_deleted_contact_ids', JSON.stringify(Array.from(deletedIds)));
+
+    setContacts((prev) => {
+      if (prev.some(c => c.id === contact.id)) return prev;
+      const updated = [contact, ...prev];
+      localStorage.setItem('latmedical_contacts', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
   // Automatically creates or updates contact when a client places an order
   const saveContactFromOrder = (orderData: {
     fullName: string;
@@ -158,24 +172,23 @@ export const ContactsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     // Try to match by phone or normalized full name
     const existingIndex = contacts.findIndex(
       (c) =>
-        (orderData.phone && orderData.phone.replace(/\D/g, '') !== '' && c.phone && c.phone.replace(/\D/g, '') === orderData.phone.replace(/\D/g, '')) ||
-        c.fullName.trim().toLowerCase() === trimmedName.toLowerCase()
+        (c.phone && orderData.phone && c.phone.replace(/\D/g, '') !== '' && c.phone.replace(/\D/g, '') === orderData.phone.replace(/\D/g, '')) ||
+        (c.fullName && c.fullName.trim().toLowerCase() === trimmedName.toLowerCase())
     );
 
-    if (existingIndex >= 0) {
+    if (existingIndex !== -1) {
       const existing = contacts[existingIndex];
       const updated: Contact = {
         ...existing,
-        fullName: trimmedName,
         phone: orderData.phone || existing.phone,
         email: orderData.email || existing.email,
         specialty: orderData.specialty || existing.specialty,
         licenseNumber: orderData.licenseNumber || existing.licenseNumber,
         address: orderData.address || existing.address,
         city: orderData.city || existing.city,
-        province: orderData.province || existing.province
+        province: orderData.province || existing.province,
+        timestamp: Date.now()
       };
-
       setContacts((prev) =>
         prev.map((c, idx) => (idx === existingIndex ? updated : c))
       );
@@ -202,6 +215,7 @@ export const ContactsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         addContact,
         updateContact,
         deleteContact,
+        restoreContact,
         saveContactFromOrder
       }}
     >
