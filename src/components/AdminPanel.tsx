@@ -123,7 +123,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
   const [isStockReportOpen, setIsStockReportOpen] = useState(false);
 
   // Clearance Inline Edits State
-  const [clrEditState, setClrEditState] = useState<Record<string, { stock: number; price: number; expiryDate: string; batchNumber: string }>>({});
+  const [clrEditState, setClrEditState] = useState<Record<string, { stock: number; price: number; expiryDate: string; batchNumber: string; note: string }>>({});
 
   // Sync clrEditState from clearanceOffers
   useEffect(() => {
@@ -135,7 +135,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
             stock: o.stock,
             price: o.clearancePrice,
             expiryDate: o.expiryDate,
-            batchNumber: o.batchNumber || ''
+            batchNumber: o.batchNumber || '',
+            note: o.note || ''
           };
         }
       });
@@ -187,9 +188,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
     setTimeout(() => setClrFormFeedback(false), 2500);
   };
 
-  const handleClrValChange = (id: string, field: 'stock' | 'price' | 'expiryDate' | 'batchNumber', val: string) => {
+  const handleClrValChange = (id: string, field: 'stock' | 'price' | 'expiryDate' | 'batchNumber' | 'note', val: string) => {
     setClrEditState(prev => {
-      const current = prev[id] || { stock: 0, price: 0, expiryDate: '', batchNumber: '' };
+      const current = prev[id] || { stock: 0, price: 0, expiryDate: '', batchNumber: '', note: '' };
       if (field === 'stock') {
         const parsed = parseInt(val, 10);
         return { ...prev, [id]: { ...current, stock: isNaN(parsed) ? 0 : parsed } };
@@ -210,7 +211,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
       stock: Math.max(0, edit.stock),
       clearancePrice: Math.max(0, edit.price),
       expiryDate: edit.expiryDate,
-      batchNumber: edit.batchNumber
+      batchNumber: edit.batchNumber.trim() || undefined,
+      note: edit.note.trim() || undefined
     });
 
     setSavedFeedback(prev => ({ ...prev, [id]: true }));
@@ -2194,10 +2196,47 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                             />
                           </td>
 
-                          {/* Batch / Note */}
-                          <td style={{ padding: '0.85rem 1.25rem', fontSize: '0.75rem', color: 'var(--text-medium)' }}>
-                            {offer.batchNumber && <div><strong>{offer.batchNumber}</strong></div>}
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-light)' }}>{offer.note}</div>
+                          {/* Batch / Note Editable Inputs */}
+                          <td style={{ padding: '0.4rem 0.75rem', minWidth: '180px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                              <input
+                                type="text"
+                                placeholder="Nº Lote (ej: 46277)"
+                                value={edit.batchNumber}
+                                onChange={e => handleClrValChange(offer.id, 'batchNumber', e.target.value)}
+                                title="Número de lote"
+                                style={{
+                                  width: '100%',
+                                  height: '28px',
+                                  padding: '0 0.45rem',
+                                  borderRadius: '4px',
+                                  border: '1px solid #cbd5e1',
+                                  fontSize: '0.78rem',
+                                  fontWeight: 700,
+                                  color: '#1e293b',
+                                  outline: 'none',
+                                  fontFamily: 'inherit'
+                                }}
+                              />
+                              <input
+                                type="text"
+                                placeholder="Nota del lote (ej: Promoción 2x1...)"
+                                value={edit.note}
+                                onChange={e => handleClrValChange(offer.id, 'note', e.target.value)}
+                                title="Nota o descripción del lote"
+                                style={{
+                                  width: '100%',
+                                  height: '28px',
+                                  padding: '0 0.45rem',
+                                  borderRadius: '4px',
+                                  border: '1px solid #e2e8f0',
+                                  fontSize: '0.74rem',
+                                  color: '#475569',
+                                  outline: 'none',
+                                  fontFamily: 'inherit'
+                                }}
+                              />
+                            </div>
                           </td>
 
                           {/* Actions */}
