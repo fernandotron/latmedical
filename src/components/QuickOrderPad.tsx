@@ -27,9 +27,12 @@ interface OrderItemRow {
   product: Product;
 }
 
+import { ArrowLeft } from 'lucide-react';
+
 export const QuickOrderPad: React.FC<{
   onSelectProduct?: (product: Product) => void;
-}> = ({ onSelectProduct }) => {
+  onBackToCatalog?: () => void;
+}> = ({ onSelectProduct, onBackToCatalog }) => {
   const { inventory } = useInventory();
   const { addToCart } = useCart();
   const { currency, exchangeRate, formatPrice } = useCurrency();
@@ -142,49 +145,120 @@ export const QuickOrderPad: React.FC<{
   };
 
   return (
-    <div style={{
-      background: 'var(--bg-white)',
-      borderRadius: '16px',
-      border: '1px solid var(--border-light)',
-      boxShadow: 'var(--shadow-md)',
-      overflow: 'hidden',
-      margin: '2rem 0'
-    }}>
-      {/* 1. Header Banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, #111827 0%, #1e3a5f 100%)',
-        padding: '2.5rem 2rem',
-        color: '#FFFFFF',
-        position: 'relative'
+    <div style={{ fontFamily: "'Montserrat', 'Open Sans', sans-serif", background: '#f8fafc', animation: 'fadeIn 0.5s ease' }}>
+      
+      {/* 1. HERO HEADER BANNER (V-LIFT / SEFFILINE STYLE) */}
+      <section style={{
+        position: 'relative',
+        background: `linear-gradient(rgba(17, 24, 39, 0.84), rgba(17, 24, 39, 0.94)), url("/vlift-texture.png")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        padding: '8rem 0 5rem 0',
+        color: '#ffffff'
       }}>
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: '350px',
-          height: '100%',
-          background: 'radial-gradient(circle at right center, rgba(45, 156, 218, 0.3) 0%, transparent 70%)',
-          pointerEvents: 'none'
-        }} />
+        <div className="container" style={{ position: 'relative', zIndex: 3 }}>
+          {onBackToCatalog && (
+            <button
+              onClick={onBackToCatalog}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
+                padding: '0.5rem 1.1rem',
+                borderRadius: '30px',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                backdropFilter: 'blur(8px)',
+                marginBottom: '1.75rem',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+            >
+              <ArrowLeft size={16} /> Volver al Catálogo
+            </button>
+          )}
 
-        <div style={{ maxWidth: '850px', position: 'relative', zIndex: 2 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
-            <span className="badge badge-accent-blue" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Zap size={14} /> Quick Order Pad B2B
-            </span>
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
-              Pedido Rápido por Matriz de Calibres para Clínicas & Quirófanos
-            </span>
+          <div style={{ maxWidth: '850px' }}>
+            <p style={{
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: '#c0a063',
+              marginBottom: '0.6rem'
+            }}>
+              MATRIZ MASIVA B2B · CLÍNICAS Y QUIRÓFANOS
+            </p>
+
+            <h1 style={{
+              fontSize: 'clamp(2.2rem, 4.5vw, 3.4rem)',
+              fontWeight: 800,
+              lineHeight: 1.15,
+              margin: '0 0 1rem 0',
+              color: '#FFFFFF',
+              letterSpacing: '-0.02em'
+            }}>
+              Pedido Rápido B2B (Matriz de Calibres)
+            </h1>
+
+            <p style={{
+              color: '#cbd5e1',
+              fontSize: '1.05rem',
+              lineHeight: 1.6,
+              maxWidth: '740px',
+              margin: '0 0 2rem 0'
+            }}>
+              Selecciona cantidades masivas de múltiples calibres de hilos PDO V-Lift Pro y kits Seffiline en un solo panel consolidado y agrégalos al carrito con un solo clic.
+            </p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <span style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#fff',
+                padding: '0.4rem 0.9rem',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}>
+                <Zap size={14} color="#c0a063" /> Carga Masiva Multi-Calibre
+              </span>
+              <span style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#fff',
+                padding: '0.4rem 0.9rem',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}>
+                <ShoppingCart size={14} color="#34d399" /> Agregado Consolidado al Carrito
+              </span>
+            </div>
           </div>
-
-          <h2 style={{ fontSize: 'clamp(1.6rem, 3.2vw, 2.3rem)', fontWeight: 800, margin: '0 0 0.5rem 0', color: '#FFFFFF' }}>
-            Matriz de Pedido Rápido B2B
-          </h2>
-          <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.85)', margin: 0, lineHeight: 1.5 }}>
-            Selecciona cantidades masivas de múltiples calibres de hilos PDO V-Lift Pro y kits Seffiline en un solo panel consolidado y agrégalos al carrito con un solo clic.
-          </p>
         </div>
-      </div>
+      </section>
+
+      {/* 2. Main Content Container */}
+      <div className="container" style={{ padding: '3.5rem 1.5rem 6rem 1.5rem' }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 10px 30px -5px rgba(0,0,0,0.06)',
+          overflow: 'hidden'
+        }}>
 
       {/* 2. Control Bar */}
       <div style={{
@@ -582,6 +656,8 @@ export const QuickOrderPad: React.FC<{
         </div>
       </div>
 
+        </div>
+      </div>
     </div>
   );
 };

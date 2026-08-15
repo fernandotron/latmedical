@@ -9,7 +9,8 @@ import {
   Phone, 
   Send, 
   BookOpen, 
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react';
 
 export interface Workshop {
@@ -149,7 +150,12 @@ const WORKSHOPS_DATA: Workshop[] = [
   }
 ];
 
-export const MedicalAcademy: React.FC = () => {
+export interface MedicalAcademyProps {
+  onBack?: () => void;
+  onContact?: () => void;
+}
+
+export const MedicalAcademy: React.FC<MedicalAcademyProps> = ({ onBack, onContact: _onContact }) => {
   const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(null);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
   const [formData, setFormData] = useState({
@@ -187,45 +193,122 @@ export const MedicalAcademy: React.FC = () => {
   };
 
   return (
-    <div style={{ animation: 'fadeIn 0.5s ease' }}>
+    <div style={{ fontFamily: "'Montserrat', 'Open Sans', sans-serif", background: '#ffffff', animation: 'fadeIn 0.5s ease' }}>
       
-      {/* 1. HERO HEADER BANNER */}
+      {/* 1. HERO HEADER BANNER (V-LIFT / SEFFILINE STYLE) */}
       <section style={{
         position: 'relative',
-        minHeight: '320px',
-        marginTop: 'var(--header-height)',
-        display: 'flex',
-        alignItems: 'center',
-        background: 'linear-gradient(135deg, #111827 0%, #17342b 100%)',
-        overflow: 'hidden',
-        padding: '3.5rem 0'
+        background: `linear-gradient(rgba(17, 24, 39, 0.82), rgba(17, 24, 39, 0.92)), url("/fondo-cursos.jpg")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        padding: '8rem 0 5rem 0',
+        color: '#ffffff'
       }}>
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: '450px',
-          height: '100%',
-          background: 'radial-gradient(circle at right center, rgba(41, 192, 147, 0.25) 0%, transparent 70%)',
-          pointerEvents: 'none'
-        }} />
+        <div className="container" style={{ position: 'relative', zIndex: 3 }}>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
+                padding: '0.5rem 1.1rem',
+                borderRadius: '30px',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                backdropFilter: 'blur(8px)',
+                marginBottom: '1.75rem',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+            >
+              <ArrowLeft size={16} /> Volver al Inicio
+            </button>
+          )}
 
-        <div className="container" style={{ position: 'relative', zIndex: 3, color: '#FFFFFF' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
-            <span className="badge badge-accent-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-              <GraduationCap size={15} /> Capacitación Médica de Excelencia
-            </span>
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
-              Acadelift · Seffiline Academy · Marenostrum Med
-            </span>
+          <div style={{ maxWidth: '850px' }}>
+            <p style={{
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: '#c0a063',
+              marginBottom: '0.6rem'
+            }}>
+              ACADELIFT · SEFFILINE ACADEMY · MARENOSTRUM MED
+            </p>
+
+            <h1 style={{
+              fontSize: 'clamp(2.2rem, 4.5vw, 3.4rem)',
+              fontWeight: 800,
+              lineHeight: 1.15,
+              margin: '0 0 1rem 0',
+              color: '#FFFFFF',
+              letterSpacing: '-0.02em'
+            }}>
+              Academia Médica & Workshops Hands-On 2026
+            </h1>
+
+            <p style={{
+              color: '#cbd5e1',
+              fontSize: '1.05rem',
+              lineHeight: 1.6,
+              maxWidth: '740px',
+              margin: '0 0 2rem 0'
+            }}>
+              Formación continua de excelencia y perfeccionamiento técnico con práctica en pacientes reales para médicos especialistas en Hilos Tensores PDO y Medicina Regenerativa Autóloga.
+            </p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <span style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#fff',
+                padding: '0.4rem 0.9rem',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}>
+                <GraduationCap size={14} color="#c0a063" /> 100% Hands-On en Pacientes Reales
+              </span>
+              <span style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#fff',
+                padding: '0.4rem 0.9rem',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}>
+                <Award size={14} color="#34d399" /> Certificación Oficial Internacional
+              </span>
+              <span style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#fff',
+                padding: '0.4rem 0.9rem',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}>
+                <Users size={14} color="#38bdf8" /> Grupos Reducidos (8 a 12 Médicos)
+              </span>
+            </div>
           </div>
-
-          <h1 style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)', fontWeight: 800, margin: '0 0 0.75rem 0', color: '#FFFFFF' }}>
-            Academia Médica & Workshops Hands-On
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '1rem', maxWidth: '680px', margin: 0, lineHeight: 1.5 }}>
-            Formación continua y perfeccionamiento técnico con práctica en pacientes reales para médicos especialistas en Hilos Tensores PDO y Medicina Regenerativa Autóloga.
-          </p>
         </div>
       </section>
 

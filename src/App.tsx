@@ -1756,17 +1756,30 @@ const App: React.FC = () => {
                   />
                 )}
                 {activeTab === 'roi' && (
-                  <div style={{ paddingTop: 'calc(var(--header-height) + 1rem)', paddingBottom: '4rem' }} className="container">
-                    <RoiCalculator onNavigateToCatalog={() => handleSetActiveTab('products')} />
-                  </div>
+                  <RoiCalculator 
+                    onNavigateToCatalog={() => handleSetActiveTab('products')} 
+                    onContact={() => handleSetActiveTab('contact')}
+                    onBack={() => handleSetActiveTab('home')}
+                  />
                 )}
                 {activeTab === 'quick-order' && (
-                  <div style={{ paddingTop: 'calc(var(--header-height) + 1rem)', paddingBottom: '4rem' }} className="container">
-                    <QuickOrderPad onSelectProduct={handleViewProduct} />
-                  </div>
+                  <QuickOrderPad 
+                    onSelectProduct={handleViewProduct} 
+                    onBackToCatalog={() => handleSetActiveTab('products')}
+                  />
                 )}
-                {activeTab === 'academia' && <MedicalAcademy />}
-                {activeTab === 'descargas' && <MedicalDownloads />}
+                {activeTab === 'academia' && (
+                  <MedicalAcademy 
+                    onBack={() => handleSetActiveTab('home')} 
+                    onContact={() => handleSetActiveTab('contact')} 
+                  />
+                )}
+                {activeTab === 'descargas' && (
+                  <MedicalDownloads 
+                    onBack={() => handleSetActiveTab('home')} 
+                    onContact={() => handleSetActiveTab('contact')} 
+                  />
+                )}
                 {activeTab === 'contact' && <Contact />}
                  {activeTab === 'admin' && (
                    <AdminPanel 

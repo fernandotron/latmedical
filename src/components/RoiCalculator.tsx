@@ -4,7 +4,8 @@ import {
   TrendingUp, 
   CheckCircle2, 
   ShoppingCart, 
-  ShieldCheck
+  ShieldCheck,
+  ArrowLeft
 } from 'lucide-react';
 import { products } from '../data/products';
 import { useCart } from '../context/CartContext';
@@ -102,7 +103,7 @@ const PRESET_PROTOCOLS: TreatmentProtocol[] = [
   }
 ];
 
-export const RoiCalculator: React.FC<{ onNavigateToCatalog?: () => void }> = ({ onNavigateToCatalog }) => {
+export const RoiCalculator: React.FC<{ onNavigateToCatalog?: () => void; onContact?: () => void; onBack?: () => void }> = ({ onNavigateToCatalog, onContact: _onContact, onBack }) => {
   const { addToCart } = useCart();
   const [selectedProtocolId, setSelectedProtocolId] = useState<string>(PRESET_PROTOCOLS[0].id);
   const [customFee, setCustomFee] = useState<number>(PRESET_PROTOCOLS[0].suggestedFee);
@@ -154,49 +155,120 @@ export const RoiCalculator: React.FC<{ onNavigateToCatalog?: () => void }> = ({ 
   };
 
   return (
-    <div style={{
-      background: 'var(--bg-white)',
-      borderRadius: '16px',
-      border: '1px solid var(--border-light)',
-      boxShadow: 'var(--shadow-md)',
-      overflow: 'hidden',
-      margin: '2rem 0'
-    }}>
-      {/* 1. Header Banner */}
-      <div style={{
-        background: 'linear-gradient(135deg, var(--primary-dark) 0%, #17342b 100%)',
-        padding: '2.5rem 2rem',
-        color: '#FFFFFF',
-        position: 'relative'
+    <div style={{ fontFamily: "'Montserrat', 'Open Sans', sans-serif", background: '#f8fafc', animation: 'fadeIn 0.5s ease' }}>
+      
+      {/* 1. HERO HEADER BANNER (V-LIFT / SEFFILINE STYLE) */}
+      <section style={{
+        position: 'relative',
+        background: `linear-gradient(rgba(17, 24, 39, 0.84), rgba(17, 24, 39, 0.94)), url("/vlift-texture.png")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        padding: '8rem 0 5rem 0',
+        color: '#ffffff'
       }}>
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: '300px',
-          height: '100%',
-          background: 'radial-gradient(circle at right center, rgba(41, 192, 147, 0.25) 0%, transparent 70%)',
-          pointerEvents: 'none'
-        }} />
+        <div className="container" style={{ position: 'relative', zIndex: 3 }}>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
+                padding: '0.5rem 1.1rem',
+                borderRadius: '30px',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                backdropFilter: 'blur(8px)',
+                marginBottom: '1.75rem',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+            >
+              <ArrowLeft size={16} /> Volver
+            </button>
+          )}
 
-        <div style={{ maxWidth: '800px', position: 'relative', zIndex: 2 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.75rem' }}>
-            <span className="badge badge-accent-green" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-              <Calculator size={14} /> Simulador Financiero Médico B2B
-            </span>
-            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}>
-              Calculado en base a precios oficiales mayoristas
-            </span>
+          <div style={{ maxWidth: '850px' }}>
+            <p style={{
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: '#c0a063',
+              marginBottom: '0.6rem'
+            }}>
+              SIMULADOR FINANCIERO MÉDICO · RENTABILIDAD B2B
+            </p>
+
+            <h1 style={{
+              fontSize: 'clamp(2.2rem, 4.5vw, 3.4rem)',
+              fontWeight: 800,
+              lineHeight: 1.15,
+              margin: '0 0 1rem 0',
+              color: '#FFFFFF',
+              letterSpacing: '-0.02em'
+            }}>
+              Calculadora de Rentabilidad (ROI) Médica
+            </h1>
+
+            <p style={{
+              color: '#cbd5e1',
+              fontSize: '1.05rem',
+              lineHeight: 1.6,
+              maxWidth: '740px',
+              margin: '0 0 2rem 0'
+            }}>
+              Simula tus ingresos, costo de insumos médicos y margen neto por tratamiento con dispositivos <strong>V-Lift Pro</strong> y kits <strong>Seffiline</strong>.
+            </p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <span style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#fff',
+                padding: '0.4rem 0.9rem',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}>
+                <Calculator size={14} color="#c0a063" /> Basado en Precios Mayoristas Oficiales
+              </span>
+              <span style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#fff',
+                padding: '0.4rem 0.9rem',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}>
+                <TrendingUp size={14} color="#34d399" /> Simulación de Margen Neto & Retorno
+              </span>
+            </div>
           </div>
-
-          <h2 style={{ fontSize: 'clamp(1.5rem, 3vw, 2.2rem)', fontWeight: 700, margin: '0 0 0.5rem 0', color: '#FFFFFF' }}>
-            Calculadora de Rentabilidad para Consultorio & Clínica
-          </h2>
-          <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.85)', margin: 0, lineHeight: 1.5 }}>
-            Descubre el margen de ganancia neta y el retorno de inversión (ROI) que obtienes al incorporar los dispositivos médicos <strong>V-Lift Pro</strong> y <strong>Seffiline</strong> en tu práctica diaria.
-          </p>
         </div>
-      </div>
+      </section>
+
+      {/* 2. Main Content Container */}
+      <div className="container" style={{ padding: '3.5rem 1.5rem 6rem 1.5rem' }}>
+        <div style={{
+          background: '#ffffff',
+          borderRadius: '16px',
+          border: '1px solid #e2e8f0',
+          boxShadow: '0 10px 30px -5px rgba(0,0,0,0.06)',
+          overflow: 'hidden'
+        }}>
 
       {/* 2. Main Content Grid */}
       <div style={{ padding: '2rem' }}>
@@ -635,7 +707,8 @@ export const RoiCalculator: React.FC<{ onNavigateToCatalog?: () => void }> = ({ 
             </button>
           )}
         </div>
-
+      </div>
+        </div>
       </div>
     </div>
   );

@@ -7,7 +7,8 @@ import {
   Printer, 
   FileCheck2, 
   Search, 
-  X
+  X,
+  ArrowLeft
 } from 'lucide-react';
 
 export interface MedicalDoc {
@@ -199,7 +200,12 @@ El paciente ha sido informado de que la rinomodelación con hilos de polidioxano
   }
 ];
 
-export const MedicalDownloads: React.FC = () => {
+export interface MedicalDownloadsProps {
+  onBack?: () => void;
+  onContact?: () => void;
+}
+
+export const MedicalDownloads: React.FC<MedicalDownloadsProps> = ({ onBack, onContact: _onContact }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [activePreviewDoc, setActivePreviewDoc] = useState<MedicalDoc | null>(null);
@@ -219,39 +225,108 @@ export const MedicalDownloads: React.FC = () => {
   };
 
   return (
-    <div style={{ animation: 'fadeIn 0.5s ease' }}>
+    <div style={{ fontFamily: "'Montserrat', 'Open Sans', sans-serif", background: '#ffffff', animation: 'fadeIn 0.5s ease' }}>
       
-      {/* 1. HERO HEADER BANNER */}
+      {/* 1. HERO HEADER BANNER (V-LIFT / SEFFILINE STYLE) */}
       <section style={{
         position: 'relative',
-        height: '35vh',
-        minHeight: '280px',
-        marginTop: 'var(--header-height)',
-        display: 'flex',
-        alignItems: 'center',
-        background: 'linear-gradient(135deg, #0F172A 0%, #134E4A 100%)',
-        overflow: 'hidden'
+        background: `linear-gradient(rgba(17, 24, 39, 0.84), rgba(17, 24, 39, 0.94)), url("/vlift-texture.png")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        padding: '8rem 0 5rem 0',
+        color: '#ffffff'
       }}>
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          right: 0,
-          width: '400px',
-          height: '100%',
-          background: 'radial-gradient(circle at right center, rgba(41, 192, 147, 0.25) 0%, transparent 70%)',
-          pointerEvents: 'none'
-        }} />
+        <div className="container" style={{ position: 'relative', zIndex: 3 }}>
+          {onBack && (
+            <button
+              onClick={onBack}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
+                padding: '0.5rem 1.1rem',
+                borderRadius: '30px',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                backdropFilter: 'blur(8px)',
+                marginBottom: '1.75rem',
+                transition: 'all 0.2s ease'
+              }}
+              onMouseEnter={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)'}
+              onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'}
+            >
+              <ArrowLeft size={16} /> Volver al Inicio
+            </button>
+          )}
 
-        <div className="container" style={{ position: 'relative', zIndex: 3, color: '#FFFFFF' }}>
-          <span className="badge badge-accent-green" style={{ marginBottom: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-            <FileCheck2 size={14} /> Centro de Recursos & Documentación Médica
-          </span>
-          <h1 style={{ fontSize: 'clamp(2rem, 4vw, 2.8rem)', fontWeight: 700, margin: 0, color: '#FFFFFF' }}>
-            Descargas Científicas & Consentimientos
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.95rem', marginTop: '0.5rem', maxWidth: '650px', lineHeight: 1.5 }}>
-            Modelos de consentimiento informado listos para imprimir, aprobaciones ANMAT, certificaciones ISO y dossiers científicos para profesionales médicos.
-          </p>
+          <div style={{ maxWidth: '850px' }}>
+            <p style={{
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: '#c0a063',
+              marginBottom: '0.6rem'
+            }}>
+              RESPALDO LEGAL · HABILITACIONES ANMAT · CERTIFICACIONES ISO
+            </p>
+
+            <h1 style={{
+              fontSize: 'clamp(2.2rem, 4.5vw, 3.4rem)',
+              fontWeight: 800,
+              lineHeight: 1.15,
+              margin: '0 0 1rem 0',
+              color: '#FFFFFF',
+              letterSpacing: '-0.02em'
+            }}>
+              Centro de Descargas & Consentimientos
+            </h1>
+
+            <p style={{
+              color: '#cbd5e1',
+              fontSize: '1.05rem',
+              lineHeight: 1.6,
+              maxWidth: '740px',
+              margin: '0 0 2rem 0'
+            }}>
+              Acceso a modelos de consentimiento informado médico-legal en PDF listos para imprimir en A4, habilitaciones ANMAT, certificados ISO 13485 y dossiers científicos.
+            </p>
+
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem' }}>
+              <span style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#fff',
+                padding: '0.4rem 0.9rem',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}>
+                <ShieldCheck size={14} color="#34d399" /> Conforme Ley 26.529 Derechos del Paciente
+              </span>
+              <span style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: '1px solid rgba(255,255,255,0.15)',
+                color: '#fff',
+                padding: '0.4rem 0.9rem',
+                borderRadius: '20px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}>
+                <FileCheck2 size={14} color="#38bdf8" /> Modelos Editables e Imprimibles A4
+              </span>
+            </div>
+          </div>
         </div>
       </section>
 

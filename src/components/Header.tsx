@@ -118,7 +118,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
         position: 'relative'
       }}>
         {/* Left Side: Brand Logo */}
-        <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 0', justifyContent: 'flex-start' }}>
+        <div style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
           <div 
             onClick={() => handleNavClick('home')}
             style={{
@@ -140,7 +140,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
           </div>
         </div>
 
-        {/* Center: Desktop Navigation */}
+        {/* Center: Desktop Navigation - Exactly centered in space between logo and coins */}
         <nav style={{ display: 'none' }} className="desktop-nav">
           <ul style={{
             display: 'flex',
@@ -280,7 +280,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
         </nav>
 
         {/* Right Side: Action Buttons */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.85rem', flex: '1 1 0' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.85rem', flexShrink: 0 }}>
           {/* Currency Switcher (USD / ARS) */}
           <div 
             title={`Moneda de cotización activa (Tipo de Cambio: $1 USD = $${exchangeRate.toLocaleString('es-AR')} ARS)`}
@@ -554,6 +554,8 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
             display: flex !important;
             align-items: center;
             justify-content: center;
+            flex: 1;
+            margin: 0 1.5rem;
           }
           #cta-header-contact {
             display: inline-flex !important;

@@ -80,89 +80,80 @@ export const ClearancePage: React.FC<ClearancePageProps> = ({ onBackToCatalog })
   };
 
   return (
-    <div style={{ paddingTop: 'var(--header-height)', animation: 'fadeIn 0.4s ease' }}>
+    <div style={{ fontFamily: "'Montserrat', 'Open Sans', sans-serif", background: '#f8fafc', animation: 'fadeIn 0.4s ease' }}>
       
-      {/* 100% FULL-WIDTH MEDICAL OUTLET HERO BANNER */}
+      {/* 100% FULL-WIDTH MEDICAL OUTLET HERO BANNER (V-LIFT / SEFFILINE STYLE) */}
       <section style={{
-        background: 'linear-gradient(135deg, #091b2e 0%, #0d2847 50%, #034b75 100%)',
-        color: '#ffffff',
-        padding: 'clamp(2.5rem, 5vw, 4.5rem) 0',
         position: 'relative',
-        overflow: 'hidden',
-        borderBottom: '1px solid rgba(255, 255, 255, 0.1)'
+        background: `linear-gradient(rgba(17, 24, 39, 0.84), rgba(17, 24, 39, 0.94)), url("/vlift-texture.png")`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        padding: '8rem 0 5rem 0',
+        color: '#ffffff'
       }}>
-        {/* Subtle decorative grid lines */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundImage: 'linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px)',
-          backgroundSize: '40px 40px',
-          pointerEvents: 'none'
-        }} />
-
-        <div className="container" style={{ position: 'relative', zIndex: 2 }}>
+        <div className="container" style={{ position: 'relative', zIndex: 3 }}>
           
           {/* Back button */}
           <div style={{ marginBottom: '1.75rem' }}>
             <button
               onClick={onBackToCatalog}
               style={{
-                background: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: '6px',
-                cursor: 'pointer',
-                color: '#e2e8f0',
-                fontWeight: 600,
-                fontSize: '0.85rem',
                 display: 'inline-flex',
                 alignItems: 'center',
-                gap: '0.4rem',
-                padding: '0.45rem 0.9rem',
-                transition: 'all 0.2s'
+                gap: '0.5rem',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
+                padding: '0.5rem 1.1rem',
+                borderRadius: '30px',
+                cursor: 'pointer',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                backdropFilter: 'blur(8px)',
+                transition: 'all 0.2s ease'
               }}
               onMouseEnter={e => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.2)';
-                e.currentTarget.style.color = '#ffffff';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.18)';
               }}
               onMouseLeave={e => {
-                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)';
-                e.currentTarget.style.color = '#e2e8f0';
+                e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)';
               }}
             >
-              <ArrowLeft size={15} /> Volver al Catálogo Regular
+              <ArrowLeft size={16} /> Volver al Catálogo Regular
             </button>
           </div>
 
-          <div style={{ maxWidth: '900px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.45rem', background: 'linear-gradient(135deg, rgba(234, 88, 12, 0.25) 0%, rgba(220, 38, 38, 0.25) 100%)', border: '1px solid rgba(251, 146, 60, 0.5)', padding: '0.35rem 0.95rem', borderRadius: '30px', marginBottom: '1.25rem' }}>
-              <Flame size={15} color="#fb923c" />
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#ffedd5' }}>
-                OUTLET MÉDICO B2B • VENTA EXCLUSIVA PROFESIONAL
-              </span>
-            </div>
+          <div style={{ maxWidth: '850px' }}>
+            <p style={{
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              letterSpacing: '0.15em',
+              textTransform: 'uppercase',
+              color: '#c0a063',
+              marginBottom: '0.6rem'
+            }}>
+              OUTLET MÉDICO B2B · VENTA EXCLUSIVA PROFESIONAL
+            </p>
 
             <h1 style={{ 
               color: '#ffffff', 
-              fontSize: 'clamp(2rem, 3.8vw, 3.1rem)', 
+              fontSize: 'clamp(2.2rem, 4.5vw, 3.4rem)', 
               fontWeight: 800, 
               lineHeight: 1.15, 
-              margin: '0 0 1.25rem 0',
-              textShadow: '0 2px 10px rgba(0,0,0,0.3)'
+              margin: '0 0 1rem 0',
+              letterSpacing: '-0.02em'
             }}>
-              Oportunidades Médicas • <span style={{ color: '#03bfd7' }}>Lotes con Descuento</span>
+              Oportunidades Médicas • <span style={{ color: '#fb923c' }}>Lotes con Descuento</span>
             </h1>
 
             <p style={{ 
-              color: '#e2e8f0', 
-              fontSize: 'clamp(0.95rem, 1.8vw, 1.08rem)', 
+              color: '#cbd5e1', 
+              fontSize: '1.05rem', 
               lineHeight: 1.6, 
-              margin: '0 0 2.5rem 0', 
-              maxWidth: '800px' 
+              margin: '0 0 2rem 0', 
+              maxWidth: '780px' 
             }}>
-              Insumos estéticos y quirúrgicos originales con empaque indemne y <strong>100% de esterilidad garantizada de fábrica</strong>. Precios reducidos exclusivos por rotación de lotes para profesionales con alto volumen de procedimientos inmediatos.
+              Insumos estéticos y quirúrgicos originales con empaque indemne y <strong>100% de esterilidad garantizada de fábrica</strong>. Precios reducidos exclusivos por rotación de lotes para profesionales médicos.
             </p>
 
             {/* Value proposition badges */}
