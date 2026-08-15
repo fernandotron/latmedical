@@ -313,11 +313,24 @@ export const ClearancePage: React.FC<ClearancePageProps> = ({ onBackToCatalog })
                   ? Math.round(((offer.regularPrice - offer.clearancePrice) / offer.regularPrice) * 100)
                   : 0;
 
-                // Find parent product to ensure high-resolution packaging image fallback
-                const parentProduct = products.find(p => p.id === offer.productId);
-                const finalImage = (offer.image && offer.image !== '/logo-symbol.png') 
-                  ? offer.image 
-                  : (parentProduct?.image || '/logo-symbol.png');
+                // Resolve image accurately, giving priority to updated product assets
+                const pName = (offer.productName || '').toLowerCase();
+                const pId = (offer.productId || '').toLowerCase();
+                const oId = (offer.id || '').toLowerCase();
+
+                let finalImage = offer.image;
+                let finalBrand = offer.brand;
+
+                if (oId.includes('exosoma') || pId.includes('exosoma') || pName.includes('exosoma')) {
+                  finalImage = '/images/products/exosomas-hair.png';
+                  finalBrand = 'VLIFT PRO';
+                } else if (oId.includes('elastica') || pId.includes('elastica') || pName.includes('elastica')) {
+                  finalImage = '/images/products/elastica-hydroboost.png';
+                  finalBrand = 'VLIFT PRO';
+                } else if (!finalImage || finalImage === '/logo-symbol.png') {
+                  const parentProduct = products.find(p => p.id === offer.productId);
+                  finalImage = parentProduct?.image || '/logo-symbol.png';
+                }
 
                 return (
                   <div
@@ -395,7 +408,7 @@ export const ClearancePage: React.FC<ClearancePageProps> = ({ onBackToCatalog })
                         style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
                       />
                       <div style={{ position: 'absolute', bottom: '8px', left: '12px' }}>
-                        <span className="badge badge-dark" style={{ fontSize: '0.68rem', padding: '0.2rem 0.55rem' }}>{offer.brand}</span>
+                        <span className="badge badge-dark" style={{ fontSize: '0.68rem', padding: '0.2rem 0.55rem' }}>{finalBrand}</span>
                       </div>
                     </div>
 

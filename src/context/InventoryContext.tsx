@@ -174,15 +174,31 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     );
   };
 
+  const sanitizeOffer = (o: ClearanceOffer): ClearanceOffer => {
+    const pName = (o.productName || '').toLowerCase();
+    const pId = (o.productId || '').toLowerCase();
+    const oId = (o.id || '').toLowerCase();
+
+    if (oId.includes('exosoma') || pId.includes('exosoma') || pName.includes('exosoma')) {
+      return { ...o, image: '/images/products/exosomas-hair.png', brand: 'V-Lift Pro', productName: 'Exosomas E-50 Hair' };
+    }
+    if (oId.includes('elastica') || pId.includes('elastica') || pName.includes('elastica')) {
+      return { ...o, image: '/images/products/elastica-hydroboost.png', brand: 'V-Lift Pro', productName: 'Elastica Hydroboost Dorada' };
+    }
+    return o;
+  };
+
   const [clearanceOffers, setClearanceOffers] = useState<ClearanceOffer[]>(() => {
-    const isV5 = localStorage.getItem('latmedical_clearance_v5');
-    if (!isV5) {
-      localStorage.setItem('latmedical_clearance_v5', 'true');
-      localStorage.setItem('latmedical_clearance', JSON.stringify(defaultClearanceData));
-      return defaultClearanceData as ClearanceOffer[];
+    const isV6 = localStorage.getItem('latmedical_clearance_v6');
+    if (!isV6) {
+      localStorage.setItem('latmedical_clearance_v6', 'true');
+      const sanitized = (defaultClearanceData as ClearanceOffer[]).map(sanitizeOffer);
+      localStorage.setItem('latmedical_clearance', JSON.stringify(sanitized));
+      return sanitized;
     }
     const saved = localStorage.getItem('latmedical_clearance');
-    return saved ? JSON.parse(saved) : (defaultClearanceData as ClearanceOffer[]);
+    const parsed = saved ? JSON.parse(saved) : (defaultClearanceData as ClearanceOffer[]);
+    return parsed.map(sanitizeOffer);
   });
 
   // Sync clearance from server on mount with intelligent two-way merge
@@ -203,16 +219,16 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
             remoteData.forEach((rItem: any) => {
               if (rItem && rItem.id) {
                 const localItem = prevLocal.find(l => l.id === rItem.id);
-                map.set(rItem.id, {
+                map.set(rItem.id, sanitizeOffer({
                   ...rItem,
                   ...(localItem ? { stock: localItem.stock, active: localItem.active } : {})
-                });
+                }));
               }
             });
             // 2. Keep any custom items created locally
             prevLocal.forEach((lItem) => {
               if (lItem && lItem.id && !map.has(lItem.id)) {
-                map.set(lItem.id, lItem);
+                map.set(lItem.id, sanitizeOffer(lItem));
               }
             });
             const merged = Array.from(map.values());
