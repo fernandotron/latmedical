@@ -465,14 +465,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
         province: moCustomerProvince.trim() || 'Buenos Aires',
         paymentMethod: moPaymentMethod,
         items: orderItems,
-        total: moTotalUSD
+        total: moTotalUSD,
+        status: moOrderStatus
       });
 
-      if (moOrderStatus !== 'Pendiente') {
-        updateOrderStatus(created.id, moOrderStatus);
-      }
-
-      setMoCreatedOrder({ ...created, status: moOrderStatus });
+      setMoCreatedOrder(created);
     }
   };
 

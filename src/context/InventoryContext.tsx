@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import defaultInventoryData from '../data/inventory.json';
 import defaultOrdersData from '../data/orders.json';
 import defaultClearanceData from '../data/clearance.json';
+import { products } from '../data/products';
 
 export interface ClearanceOffer {
   id: string;
@@ -72,7 +73,7 @@ interface InventoryContextType {
   clearanceOffers: ClearanceOffer[];
   updateStock: (productId: string, variantId: string | undefined, newStock: number, newPrice?: number) => void;
   decrementStockForOrder: (items: OrderItem[]) => void;
-  addOrder: (order: Omit<Order, 'id' | 'date' | 'status'>) => Order;
+  addOrder: (order: Omit<Order, 'id' | 'date' | 'status'> & { status?: Order['status'] }) => Order;
   updateOrder: (orderId: string, updated: Partial<Order>) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   deleteOrder: (orderId: string) => void;
@@ -275,77 +276,110 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     );
   };
 
+  const isMatchProduct = (invProductId: string, item: OrderItem): boolean => {
+    if (!item) return false;
+    if (item.productId && item.productId.toLowerCase() === invProductId.toLowerCase()) return true;
+    const prod = products.find(p => p.id.toLowerCase() === invProductId.toLowerCase());
+    if (prod && item.productName && prod.name.trim().toLowerCase() === item.productName.trim().toLowerCase()) return true;
+    return false;
+  };
+
+  const isMatchVariant = (varName: string, orderVarName?: string): boolean => {
+    if (!orderVarName) return false;
+    return varName.trim().toLowerCase() === orderVarName.trim().toLowerCase();
+  };
+
   const decrementStockForOrder = (items: OrderItem[]) => {
+    if (!items || items.length === 0) return;
+
     // 1. Decrement regular inventory for non-clearance items
     setInventory((prevInv) =>
-      prevInv.map((item) => {
-        const orderItem = items.find((oi) => !oi.isClearance && oi.productId === item.productId);
-        if (!orderItem) return item;
+      prevInv.map((invItem) => {
+        const matchingItems = items.filter((oi) => !oi.isClearance && isMatchProduct(invItem.productId, oi));
+        if (matchingItems.length === 0) return invItem;
 
-        if (item.hasVariants && orderItem.variantName) {
+        if (invItem.hasVariants && invItem.variants && invItem.variants.length > 0) {
           return {
-            ...item,
-            variants: item.variants.map((v) =>
-              v.name === orderItem.variantName
-                ? { ...v, stock: Math.max(0, v.stock - orderItem.quantity) }
-                : v
-            )
+            ...invItem,
+            variants: invItem.variants.map((v) => {
+              const totalDeduct = matchingItems
+                .filter((oi) => isMatchVariant(v.name, oi.variantName))
+                .reduce((sum, oi) => sum + (oi.quantity || 0), 0);
+              
+              if (totalDeduct <= 0) return v;
+              return {
+                ...v,
+                stock: Math.max(0, v.stock - totalDeduct)
+              };
+            })
           };
         } else {
-          return { ...item, stock: Math.max(0, item.stock - orderItem.quantity) };
+          const totalDeduct = matchingItems.reduce((sum, oi) => sum + (oi.quantity || 0), 0);
+          return { ...invItem, stock: Math.max(0, invItem.stock - totalDeduct) };
         }
       })
     );
 
     // 2. Decrement clearance stock for clearance items
-    setClearanceOffers(prevClr =>
-      prevClr.map(clr => {
-        const clrOrderItem = items.find(oi => oi.isClearance && oi.clearanceId === clr.id);
-        if (!clrOrderItem) return clr;
+    setClearanceOffers((prevClr) =>
+      prevClr.map((clr) => {
+        const matchingClrItems = items.filter((oi) => oi.isClearance && (oi.clearanceId === clr.id || (oi.productName && clr.productName && oi.productName.toLowerCase() === clr.productName.toLowerCase())));
+        if (matchingClrItems.length === 0) return clr;
+        const totalDeduct = matchingClrItems.reduce((sum, oi) => sum + (oi.quantity || 0), 0);
         return {
           ...clr,
-          stock: Math.max(0, clr.stock - clrOrderItem.quantity)
+          stock: Math.max(0, clr.stock - totalDeduct)
         };
       })
     );
   };
 
   const incrementStockForOrder = (items: OrderItem[]) => {
+    if (!items || items.length === 0) return;
+
     // 1. Increment regular inventory
     setInventory((prevInv) =>
-      prevInv.map((item) => {
-        const orderItem = items.find((oi) => !oi.isClearance && oi.productId === item.productId);
-        if (!orderItem) return item;
+      prevInv.map((invItem) => {
+        const matchingItems = items.filter((oi) => !oi.isClearance && isMatchProduct(invItem.productId, oi));
+        if (matchingItems.length === 0) return invItem;
 
-        if (item.hasVariants && orderItem.variantName) {
+        if (invItem.hasVariants && invItem.variants && invItem.variants.length > 0) {
           return {
-            ...item,
-            variants: item.variants.map((v) =>
-              v.name === orderItem.variantName
-                ? { ...v, stock: v.stock + orderItem.quantity }
-                : v
-            )
+            ...invItem,
+            variants: invItem.variants.map((v) => {
+              const totalAdd = matchingItems
+                .filter((oi) => isMatchVariant(v.name, oi.variantName))
+                .reduce((sum, oi) => sum + (oi.quantity || 0), 0);
+              
+              if (totalAdd <= 0) return v;
+              return {
+                ...v,
+                stock: v.stock + totalAdd
+              };
+            })
           };
         } else {
-          return { ...item, stock: item.stock + orderItem.quantity };
+          const totalAdd = matchingItems.reduce((sum, oi) => sum + (oi.quantity || 0), 0);
+          return { ...invItem, stock: invItem.stock + totalAdd };
         }
       })
     );
 
     // 2. Increment clearance stock
-    setClearanceOffers(prevClr =>
-      prevClr.map(clr => {
-        const clrOrderItem = items.find(oi => oi.isClearance && oi.clearanceId === clr.id);
-        if (!clrOrderItem) return clr;
+    setClearanceOffers((prevClr) =>
+      prevClr.map((clr) => {
+        const matchingClrItems = items.filter((oi) => oi.isClearance && (oi.clearanceId === clr.id || (oi.productName && clr.productName && oi.productName.toLowerCase() === clr.productName.toLowerCase())));
+        if (matchingClrItems.length === 0) return clr;
+        const totalAdd = matchingClrItems.reduce((sum, oi) => sum + (oi.quantity || 0), 0);
         return {
           ...clr,
-          stock: clr.stock + clrOrderItem.quantity
+          stock: clr.stock + totalAdd
         };
       })
     );
   };
 
-  const addOrder = (orderData: Omit<Order, 'id' | 'date' | 'status'>) => {
+  const addOrder = (orderData: Omit<Order, 'id' | 'date' | 'status'> & { status?: Order['status'] }) => {
     const newOrder: Order = {
       ...orderData,
       id: `LM-${Math.floor(100000 + Math.random() * 900000)}`,
@@ -356,12 +390,14 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         hour: '2-digit',
         minute: '2-digit'
       }),
-      status: 'Pendiente',
-      stockDecremented: true,
+      status: orderData.status || 'Pendiente',
+      stockDecremented: orderData.status !== 'Cancelado',
       timestamp: Date.now()
     };
 
-    decrementStockForOrder(newOrder.items);
+    if (newOrder.status !== 'Cancelado') {
+      decrementStockForOrder(newOrder.items);
+    }
     setOrders((prevOrders) => [newOrder, ...prevOrders]);
     return newOrder;
   };
@@ -371,7 +407,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       prevOrders.map((o) => {
         if (o.id !== orderId) return o;
         
-        let stockDecremented = o.stockDecremented || false;
+        let stockDecremented = o.stockDecremented ?? true;
         
         if (status === 'Cancelado' && stockDecremented) {
           incrementStockForOrder(o.items);
@@ -387,18 +423,24 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   };
 
   const updateOrder = (orderId: string, updatedData: Partial<Order>) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((o) => {
+    setOrders((prevOrders) => {
+      const existingOrder = prevOrders.find((o) => o.id === orderId);
+      if (existingOrder && updatedData.items && existingOrder.stockDecremented) {
+        // Reconcile stock: restore previous items and deduct new items
+        incrementStockForOrder(existingOrder.items);
+        decrementStockForOrder(updatedData.items);
+      }
+      return prevOrders.map((o) => {
         if (o.id !== orderId) return o;
         return { ...o, ...updatedData };
-      })
-    );
+      });
+    });
   };
 
   const deleteOrder = (orderId: string) => {
     setOrders((prevOrders) => {
       const orderToDelete = prevOrders.find((o) => o.id === orderId);
-      if (orderToDelete && orderToDelete.stockDecremented) {
+      if (orderToDelete && (orderToDelete.stockDecremented ?? true) && orderToDelete.status !== 'Cancelado') {
         incrementStockForOrder(orderToDelete.items);
       }
       return prevOrders.filter((o) => o.id !== orderId);
