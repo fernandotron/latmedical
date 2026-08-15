@@ -84,19 +84,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product, onViewDetails
           }}
           className="product-card-img"
         />
-        <div style={{
-          position: 'absolute',
-          top: '12px',
-          left: '12px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '0.4rem',
-          pointerEvents: 'none',
-          zIndex: 11
-        }}>
-          <span className="badge badge-brand">{product.brand}</span>
-          <span className="badge badge-accent-green">{product.category}</span>
-        </div>
 
         {isOutOfStock && (
           <div style={{
