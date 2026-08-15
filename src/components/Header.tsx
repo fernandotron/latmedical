@@ -40,31 +40,26 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
       isExternal: false,
       submenu: [
         { 
-          id: 'quick-order', 
-          label: '⚡ Pedido Rápido B2B', 
-          desc: 'Matriz masiva por calibres para clínicas y quirófanos',
-          badge: 'B2B'
-        },
-        { 
           id: 'products', 
-          label: '📦 Catálogo Completo', 
-          desc: 'Dispositivos médicos y equipamiento estético' 
+          label: 'Catálogo Completo'
         },
         { 
           id: 'hilos-pdo', 
-          label: '🧵 Hilos PDO (V-Lift Pro)', 
-          desc: 'Mono, Screw, Genesis, Cones, Nose, Eye y Biocánulas' 
+          label: 'Hilos PDO (V-Lift Pro)'
         },
         { 
           id: 'seffiline', 
-          label: '🧬 Medicina Regenerativa (Seffiline)', 
-          desc: 'Kits autólogos Seffiller, Seffihair, Sefficare y Seffigyn' 
+          label: 'Medicina Regenerativa (Seffiline)'
         },
         { 
           id: 'clearance', 
-          label: '🔥 Oportunidades & Outlet', 
-          desc: 'Lotes especiales con 20% a 60% OFF por caducidad',
+          label: 'Oportunidades & Outlet',
           badge: 'OUTLET'
+        },
+        { 
+          id: 'quick-order', 
+          label: 'Pedido Rápido B2B', 
+          badge: 'B2B'
         }
       ]
     },
@@ -75,21 +70,15 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
       submenu: [
         { 
           id: 'academia', 
-          label: '🎓 Academia & Workshops', 
-          desc: 'Masterclasses con práctica hands-on en pacientes reales',
-          badge: 'HANDS-ON'
+          label: 'Academia & Workshops'
         },
         { 
           id: 'descargas', 
-          label: '📄 Descargas & Consentimientos', 
-          desc: 'Modelos legales listos para imprimir en A4 y ANMAT',
-          badge: 'ANMAT'
+          label: 'Descargas & Consentimientos'
         },
         { 
           id: 'roi', 
-          label: '📊 Calculadora ROI Médica', 
-          desc: 'Simulador de ganancias y retorno por tratamiento',
-          badge: 'PRO'
+          label: 'Calculadora ROI Médica'
         }
       ]
     },
@@ -125,11 +114,11 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
         width: '100%',
         maxWidth: '1440px',
         margin: '0 auto',
-        padding: '0 clamp(1.25rem, 3vw, 2.5rem)'
+        padding: '0 clamp(1.25rem, 3vw, 2.5rem)',
+        position: 'relative'
       }}>
-        {/* Left Side: Brand Logo + Desktop Navigation together */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 'clamp(2rem, 3vw, 3.5rem)' }}>
-          {/* Brand Logo */}
+        {/* Left Side: Brand Logo */}
+        <div style={{ display: 'flex', alignItems: 'center', flex: '1 1 0', justifyContent: 'flex-start' }}>
           <div 
             onClick={() => handleNavClick('home')}
             style={{
@@ -149,141 +138,48 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
               }} 
             />
           </div>
+        </div>
 
-          {/* Desktop Navigation - Connected directly to the logo */}
-          <nav style={{ display: 'none' }} className="desktop-nav">
-            <ul style={{
-              display: 'flex',
-              listStyle: 'none',
-              gap: '1.5rem',
-              alignItems: 'center',
-              margin: 0,
-              padding: 0
-            }}>
-              {navLinks.map((link: any) => {
-                const isSubActive = link.submenu && link.submenu.some((sub: any) => sub.id === activeTab);
-                const isItemActive = activeTab === link.id || isSubActive;
+        {/* Center: Desktop Navigation */}
+        <nav style={{ display: 'none' }} className="desktop-nav">
+          <ul style={{
+            display: 'flex',
+            listStyle: 'none',
+            gap: '1.75rem',
+            alignItems: 'center',
+            margin: 0,
+            padding: 0
+          }}>
+            {navLinks.map((link: any) => {
+              const isSubActive = link.submenu && link.submenu.some((sub: any) => sub.id === activeTab);
+              const isItemActive = activeTab === link.id || isSubActive;
 
-                return (
-                  <li key={link.id} className={link.submenu ? "nav-item-dropdown" : ""} style={{ position: 'relative' }}>
-                    {link.submenu ? (
-                      <div style={{ position: 'relative' }}>
-                        <button
-                          onClick={() => handleNavClick(link.id)}
-                          className="nav-dropdown-trigger"
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            fontFamily: 'var(--font-headings)',
-                            fontSize: '0.88rem',
-                            fontWeight: isItemActive ? 700 : 600,
-                            color: isItemActive ? 'var(--accent-green)' : 'var(--text-medium)',
-                            cursor: 'pointer',
-                            position: 'relative',
-                            padding: '0.6rem 0.2rem',
-                            transition: 'var(--transition-fast)',
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.35rem'
-                          }}
-                        >
-                          <span>{link.label}</span>
-                          <ChevronDown size={14} className="nav-chevron-icon" style={{ transition: 'transform 0.2s ease' }} />
-                          {isItemActive && (
-                            <span style={{
-                              position: 'absolute',
-                              bottom: 0,
-                              left: '0',
-                              width: '100%',
-                              height: '2.5px',
-                              background: 'var(--accent-gradient)',
-                              borderRadius: '2px'
-                            }} />
-                          )}
-                        </button>
-
-                        {/* Dropdown Menu Popup */}
-                        <div className="nav-dropdown-menu">
-                          {link.submenu.map((sub: any) => {
-                            const isSubSelected = activeTab === sub.id;
-                            return (
-                              <button
-                                key={sub.id}
-                                className="nav-dropdown-item"
-                                onClick={() => handleNavClick(sub.id)}
-                                style={{
-                                  background: isSubSelected ? 'rgba(41, 192, 147, 0.08)' : 'transparent'
-                                }}
-                              >
-                                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: sub.desc ? '0.2rem' : 0 }}>
-                                  <span style={{
-                                    fontWeight: isSubSelected ? 700 : 600,
-                                    color: isSubSelected ? 'var(--accent-green)' : 'var(--primary-dark)',
-                                    fontSize: '0.86rem'
-                                  }}>
-                                    {sub.label}
-                                  </span>
-                                  {sub.badge && (
-                                    <span style={{
-                                      fontSize: '0.62rem',
-                                      fontWeight: 800,
-                                      padding: '0.12rem 0.45rem',
-                                      borderRadius: '12px',
-                                      background: sub.badge === 'B2B' ? 'rgba(3, 191, 215, 0.15)' : sub.badge === 'OUTLET' ? 'rgba(234, 88, 12, 0.15)' : 'rgba(41, 192, 147, 0.15)',
-                                      color: sub.badge === 'B2B' ? '#038e9f' : sub.badge === 'OUTLET' ? '#ea580c' : '#15803d',
-                                      letterSpacing: '0.04em'
-                                    }}>
-                                      {sub.badge}
-                                    </span>
-                                  )}
-                                </div>
-                                {sub.desc && (
-                                  <span style={{
-                                    display: 'block',
-                                    fontSize: '0.72rem',
-                                    color: 'var(--text-medium)',
-                                    lineHeight: 1.3,
-                                    fontWeight: 400
-                                  }}>
-                                    {sub.desc}
-                                  </span>
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    ) : (
+              return (
+                <li key={link.id} className={link.submenu ? "nav-item-dropdown" : ""} style={{ position: 'relative' }}>
+                  {link.submenu ? (
+                    <div style={{ position: 'relative' }}>
                       <button
                         onClick={() => handleNavClick(link.id)}
+                        className="nav-dropdown-trigger"
                         style={{
                           background: 'none',
                           border: 'none',
                           fontFamily: 'var(--font-headings)',
                           fontSize: '0.88rem',
-                          fontWeight: activeTab === link.id ? 700 : 600,
-                          color: activeTab === link.id ? 'var(--accent-green)' : 'var(--text-medium)',
+                          fontWeight: isItemActive ? 700 : 600,
+                          color: isItemActive ? 'var(--accent-green)' : 'var(--text-medium)',
                           cursor: 'pointer',
                           position: 'relative',
                           padding: '0.6rem 0.2rem',
                           transition: 'var(--transition-fast)',
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: '0.4rem'
-                        }}
-                        onMouseEnter={e => {
-                          if (activeTab !== link.id) {
-                            e.currentTarget.style.color = 'var(--accent-green)';
-                          }
-                        }}
-                        onMouseLeave={e => {
-                          if (activeTab !== link.id) {
-                            e.currentTarget.style.color = 'var(--text-medium)';
-                          }
+                          gap: '0.35rem'
                         }}
                       >
                         <span>{link.label}</span>
-                        {activeTab === link.id && (
+                        <ChevronDown size={14} className="nav-chevron-icon" style={{ transition: 'transform 0.2s ease' }} />
+                        {isItemActive && (
                           <span style={{
                             position: 'absolute',
                             bottom: 0,
@@ -295,16 +191,96 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
                           }} />
                         )}
                       </button>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
-          </nav>
-        </div>
 
-        {/* Action Buttons - Aligned to far right */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexShrink: 0 }}>
+                      {/* Dropdown Menu Popup */}
+                      <div className="nav-dropdown-menu">
+                        {link.submenu.map((sub: any) => {
+                          const isSubSelected = activeTab === sub.id;
+                          return (
+                            <button
+                              key={sub.id}
+                              className="nav-dropdown-item"
+                              onClick={() => handleNavClick(sub.id)}
+                              style={{
+                                background: isSubSelected ? 'rgba(41, 192, 147, 0.08)' : 'transparent'
+                              }}
+                            >
+                              <span style={{
+                                fontWeight: isSubSelected ? 700 : 500,
+                                color: isSubSelected ? 'var(--accent-green)' : 'var(--primary-dark)',
+                                fontSize: '0.86rem'
+                              }}>
+                                {sub.label}
+                              </span>
+                              {sub.badge && (
+                                <span style={{
+                                  fontSize: '0.62rem',
+                                  fontWeight: 800,
+                                  padding: '0.12rem 0.45rem',
+                                  borderRadius: '12px',
+                                  background: sub.badge === 'B2B' ? 'rgba(3, 191, 215, 0.15)' : sub.badge === 'OUTLET' ? 'rgba(234, 88, 12, 0.15)' : 'rgba(41, 192, 147, 0.15)',
+                                  color: sub.badge === 'B2B' ? '#038e9f' : sub.badge === 'OUTLET' ? '#ea580c' : '#15803d',
+                                  letterSpacing: '0.04em'
+                                }}>
+                                  {sub.badge}
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => handleNavClick(link.id)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        fontFamily: 'var(--font-headings)',
+                        fontSize: '0.88rem',
+                        fontWeight: activeTab === link.id ? 700 : 600,
+                        color: activeTab === link.id ? 'var(--accent-green)' : 'var(--text-medium)',
+                        cursor: 'pointer',
+                        position: 'relative',
+                        padding: '0.6rem 0.2rem',
+                        transition: 'var(--transition-fast)',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem'
+                      }}
+                      onMouseEnter={e => {
+                        if (activeTab !== link.id) {
+                          e.currentTarget.style.color = 'var(--accent-green)';
+                        }
+                      }}
+                      onMouseLeave={e => {
+                        if (activeTab !== link.id) {
+                          e.currentTarget.style.color = 'var(--text-medium)';
+                        }
+                      }}
+                    >
+                      <span>{link.label}</span>
+                      {activeTab === link.id && (
+                        <span style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: '0',
+                          width: '100%',
+                          height: '2.5px',
+                          background: 'var(--accent-gradient)',
+                          borderRadius: '2px'
+                        }} />
+                      )}
+                    </button>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </nav>
+
+        {/* Right Side: Action Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '0.85rem', flex: '1 1 0' }}>
           {/* Currency Switcher (USD / ARS) */}
           <div 
             title={`Moneda de cotización activa (Tipo de Cambio: $1 USD = $${exchangeRate.toLocaleString('es-AR')} ARS)`}
@@ -575,7 +551,9 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
       <style>{`
         @media (min-width: 860px) {
           .desktop-nav {
-            display: block !important;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
           }
           #cta-header-contact {
             display: inline-flex !important;
@@ -588,7 +566,7 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
         /* Hover Submenu CSS styles */
         .nav-item-dropdown:hover .nav-dropdown-menu {
           display: flex;
-          animation: fadeInMenu 0.2s ease forwards;
+          animation: fadeInMenu 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         .nav-item-dropdown:hover .nav-chevron-icon {
@@ -603,32 +581,35 @@ export const Header: React.FC<HeaderProps> = ({ activeTab, setActiveTab, toggleC
           left: 50%;
           transform: translateX(-50%);
           background: #ffffff;
-          box-shadow: 0 20px 40px -10px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(226, 232, 240, 0.8);
-          border-radius: 14px;
-          padding: 0.5rem;
-          min-width: 320px;
+          box-shadow: 0 14px 34px -6px rgba(15, 23, 42, 0.12), 0 0 0 1px rgba(226, 232, 240, 0.9);
+          border-radius: 12px;
+          padding: 0.35rem;
+          min-width: 250px;
           z-index: 1000;
-          gap: 0.25rem;
+          gap: 0.15rem;
         }
 
         .nav-dropdown-item {
           display: flex;
-          flex-direction: column;
-          align-items: flex-start;
+          align-items: center;
+          justify-content: space-between;
           width: 100%;
           text-align: left;
           background: transparent;
           border: none;
-          padding: 0.65rem 0.85rem;
+          padding: 0.55rem 0.85rem;
           border-radius: 8px;
           cursor: pointer;
           font-family: var(--font-headings);
-          transition: background 0.15s ease, transform 0.15s ease;
+          transition: background 0.15s ease, color 0.15s ease;
         }
 
         .nav-dropdown-item:hover {
           background: #F8FAFC !important;
-          transform: translateX(3px);
+        }
+
+        .nav-dropdown-item:hover span {
+          color: var(--accent-green) !important;
         }
 
         @keyframes fadeInMenu {
