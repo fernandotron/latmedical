@@ -53,6 +53,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
     updateOrderStatus, 
     deleteOrder,
     addOrder,
+    updateOrder,
     addClearanceOffer,
     updateClearanceOffer,
     deleteClearanceOffer,
@@ -265,9 +266,53 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
   const [moGlobalDiscountUSD, setMoGlobalDiscountUSD] = useState<string>('0');
   const [moDecrementStock, setMoDecrementStock] = useState<boolean>(true);
 
-  // Success Feedback
+  // Success Feedback & Editing State
   const [moCreatedOrder, setMoCreatedOrder] = useState<Order | null>(null);
+  const [moEditingOrderId, setMoEditingOrderId] = useState<string | null>(null);
   const [moError, setMoError] = useState<string>('');
+
+  // Load existing order for editing in Holded-style builder
+  const handleEditExistingOrder = (order: Order) => {
+    setMoEditingOrderId(order.id);
+    setMoCustomerName(order.fullName || '');
+    setMoCustomerPhone(order.phone || '');
+    setMoCustomerEmail(order.email || '');
+    setMoCustomerSpecialty(order.specialty || '');
+    setMoCustomerLicense(order.licenseNumber || '');
+    setMoCustomerAddress(order.address || '');
+    setMoCustomerCity(order.city || 'CABA');
+    setMoCustomerProvince(order.province || 'Buenos Aires');
+    setMoPaymentMethod(order.paymentMethod || 'Transferencia Bancaria');
+    setMoOrderStatus(order.status || 'Aprobado');
+    setMoOrderNotes('');
+    setMoGlobalDiscountUSD('0');
+    setMoCreatedOrder(null);
+    setMoError('');
+
+    const mappedItems: ManualOrderItem[] = order.items.map((item, idx) => {
+      const prod = products.find(p => p.id === item.productId || p.name === item.productName);
+      const inv = inventory.find(i => i.productId === item.productId || (prod && i.productId === prod.id));
+      const variant = inv?.variants?.find(v => v.name === item.variantName);
+
+      return {
+        lineId: `line-edit-${Date.now()}-${idx}`,
+        productId: item.productId || (prod?.id || `p-${idx}`),
+        variantId: variant?.id,
+        variantName: item.variantName,
+        productName: item.productName,
+        brand: item.brand || (prod?.brand || 'Vlift Pro'),
+        image: prod?.image || '/images/products/placeholder.png',
+        stock: variant ? variant.stock : (inv?.stock || 0),
+        regularPrice: (variant && variant.price !== undefined) ? variant.price : (prod?.price || item.price),
+        price: item.price,
+        quantity: item.quantity
+      };
+    });
+
+    setMoItems(mappedItems);
+    setActiveTab('manual-order');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   // Add a product or variant line to the order
   const handleAddProductToManualOrder = (prod: Product, variant?: { id: string; name: string; price?: number; stock: number }, initialStock?: number) => {
@@ -317,6 +362,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
 
   const handleClearManualOrder = () => {
     setMoItems([]);
+    setMoEditingOrderId(null);
     setMoCustomerName('');
     setMoCustomerPhone('');
     setMoCustomerEmail('');
@@ -339,7 +385,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
   const moTotalUSD = Math.max(0, moSubtotalUSD - moDiscountNum);
   const moTotalUnits = moItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Process and save manual order
+  // Process and save manual order (creates new or updates existing)
   const handleProcessManualOrder = (e: React.FormEvent) => {
     e.preventDefault();
     setMoError('');
@@ -363,25 +409,71 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
       price: item.price
     }));
 
-    const created = addOrder({
-      fullName: moCustomerName.trim(),
-      phone: moCustomerPhone.trim() || 'Sin teléfono',
-      email: moCustomerEmail.trim() || undefined,
-      specialty: moCustomerSpecialty.trim() || 'Médico / Clínica B2B',
-      licenseNumber: moCustomerLicense.trim() || 'Venta Especial Admin',
-      address: moCustomerAddress.trim() || 'Despacho a convenir',
-      city: moCustomerCity.trim() || 'CABA',
-      province: moCustomerProvince.trim() || 'Buenos Aires',
-      paymentMethod: moPaymentMethod,
-      items: orderItems,
-      total: moTotalUSD
-    });
+    if (moEditingOrderId) {
+      // Update existing order
+      updateOrder(moEditingOrderId, {
+        fullName: moCustomerName.trim(),
+        phone: moCustomerPhone.trim() || 'Sin teléfono',
+        email: moCustomerEmail.trim() || undefined,
+        specialty: moCustomerSpecialty.trim() || 'Médico / Clínica B2B',
+        licenseNumber: moCustomerLicense.trim() || 'Venta Especial Admin',
+        address: moCustomerAddress.trim() || 'Despacho a convenir',
+        city: moCustomerCity.trim() || 'CABA',
+        province: moCustomerProvince.trim() || 'Buenos Aires',
+        paymentMethod: moPaymentMethod,
+        items: orderItems,
+        total: moTotalUSD,
+        status: moOrderStatus
+      });
 
-    if (moOrderStatus !== 'Pendiente') {
-      updateOrderStatus(created.id, moOrderStatus);
+      const updatedObj: Order = {
+        id: moEditingOrderId,
+        date: new Date().toLocaleDateString('es-AR', {
+          year: 'numeric',
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }),
+        fullName: moCustomerName.trim(),
+        phone: moCustomerPhone.trim() || 'Sin teléfono',
+        email: moCustomerEmail.trim() || undefined,
+        specialty: moCustomerSpecialty.trim() || 'Médico / Clínica B2B',
+        licenseNumber: moCustomerLicense.trim() || 'Venta Especial Admin',
+        address: moCustomerAddress.trim() || 'Despacho a convenir',
+        city: moCustomerCity.trim() || 'CABA',
+        province: moCustomerProvince.trim() || 'Buenos Aires',
+        paymentMethod: moPaymentMethod,
+        items: orderItems,
+        total: moTotalUSD,
+        status: moOrderStatus,
+        timestamp: Date.now()
+      };
+
+      setMoCreatedOrder(updatedObj);
+      setMoEditingOrderId(null);
+    } else {
+      // Create new order
+      const created = addOrder({
+        fullName: moCustomerName.trim(),
+        phone: moCustomerPhone.trim() || 'Sin teléfono',
+        email: moCustomerEmail.trim() || undefined,
+        specialty: moCustomerSpecialty.trim() || 'Médico / Clínica B2B',
+        licenseNumber: moCustomerLicense.trim() || 'Venta Especial Admin',
+        address: moCustomerAddress.trim() || 'Despacho a convenir',
+        city: moCustomerCity.trim() || 'CABA',
+        province: moCustomerProvince.trim() || 'Buenos Aires',
+        paymentMethod: moPaymentMethod,
+        items: orderItems,
+        total: moTotalUSD
+      });
+
+      if (moOrderStatus !== 'Pendiente') {
+        updateOrderStatus(created.id, moOrderStatus);
+      }
+
+      setMoCreatedOrder({ ...created, status: moOrderStatus });
     }
-
-    setMoCreatedOrder({ ...created, status: moOrderStatus });
   };
 
   // Expanded Products state for collapsing multiple calibers
@@ -2792,16 +2884,38 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                 </div>
                 <div>
                   <h2 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
-                    Creador de Pedidos & Ventas B2B (Precios Personalizados)
+                    {moEditingOrderId ? `Modificar y Editar Pedido #${moEditingOrderId}` : 'Creador de Pedidos & Ventas B2B (Precios Personalizados)'}
                   </h2>
                   <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-medium)', lineHeight: 1.4 }}>
-                    Agregue productos, modifique libremente el precio unitario en la tabla para ventas con descuento especial o acuerdos comerciales, y procese la venta directo al inventario.
+                    {moEditingOrderId ? 'Modifique productos, cambie cantidades, ajuste precios unitarios acordados o actualice los datos de entrega.' : 'Agregue productos, modifique libremente el precio unitario en la tabla para ventas con descuento especial o acuerdos comerciales, y procese la venta directo al inventario.'}
                   </p>
                 </div>
               </div>
 
               <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-                {moItems.length > 0 && (
+                {moEditingOrderId && (
+                  <button
+                    type="button"
+                    onClick={handleClearManualOrder}
+                    style={{
+                      background: '#f1f5f9',
+                      color: '#475569',
+                      border: '1px solid #cbd5e1',
+                      borderRadius: '6px',
+                      padding: '0.55rem 1rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    Cancelar Edición
+                  </button>
+                )}
+                {moItems.length > 0 && !moEditingOrderId && (
                   <button
                     type="button"
                     onClick={handleClearManualOrder}
@@ -2845,6 +2959,45 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                 </button>
               </div>
             </div>
+
+            {/* Editing Notice Banner */}
+            {moEditingOrderId && (
+              <div style={{
+                background: '#eff6ff',
+                border: '1.5px solid #3b82f6',
+                borderRadius: '10px',
+                padding: '0.85rem 1.25rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '0.5rem'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <Edit2 size={18} color="#2563eb" />
+                  <span style={{ color: '#1e40af', fontWeight: 800, fontSize: '0.88rem' }}>
+                    Estás editando el pedido <strong>#{moEditingOrderId}</strong>. Puedes añadir o quitar productos, cambiar cantidades y precios unitarios, y luego guardar los cambios.
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleClearManualOrder}
+                  style={{
+                    background: '#ffffff',
+                    border: '1px solid #93c5fd',
+                    color: '#1e40af',
+                    padding: '0.35rem 0.85rem',
+                    borderRadius: '6px',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontFamily: 'inherit'
+                  }}
+                >
+                  Salir de Edición
+                </button>
+              </div>
+            )}
 
             {/* Error Message */}
             {moError && (
@@ -3649,12 +3802,12 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                     <span>Descontar stock automáticamente del inventario</span>
                   </label>
 
-                  {/* Process button */}
+                  {/* Process / Save button */}
                   <button
                     type="submit"
                     disabled={moItems.length === 0}
                     style={{
-                      background: moItems.length > 0 ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : '#94a3b8',
+                      background: moItems.length > 0 ? (moEditingOrderId ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)') : '#94a3b8',
                       color: '#ffffff',
                       border: 'none',
                       borderRadius: '8px',
@@ -3672,7 +3825,8 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                       marginTop: '0.5rem'
                     }}
                   >
-                    <Receipt size={18} /> Procesar y Guardar Pedido ({moTotalUnits})
+                    {moEditingOrderId ? <Save size={18} /> : <Receipt size={18} />}
+                    {moEditingOrderId ? `Guardar Cambios de la Orden #${moEditingOrderId}` : `Procesar y Guardar Pedido (${moTotalUnits})`}
                   </button>
                 </div>
 
@@ -3744,8 +3898,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                             </span>
                           </div>
                           
-                          {/* Action status dropdown & Delete order */}
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }} onClick={(e) => e.stopPropagation()}>
+                          {/* Action status dropdown, Edit & Delete order */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }} onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditExistingOrder(order);
+                              }}
+                              style={{
+                                background: '#eff6ff',
+                                border: '1px solid #bfdbfe',
+                                color: '#1d4ed8',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                padding: '0.38rem 0.75rem',
+                                borderRadius: '6px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                fontFamily: 'inherit',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseOver={e => e.currentTarget.style.backgroundColor = '#dbeafe'}
+                              onMouseOut={e => e.currentTarget.style.backgroundColor = '#eff6ff'}
+                              title="Editar productos, cantidades o precios de este pedido"
+                            >
+                              <Edit2 size={13} /> Editar Pedido
+                            </button>
+
                             <select
                               value={currentStatus}
                               onChange={(e) => setTempOrderStatus(prev => ({ ...prev, [order.id]: e.target.value as Order['status'] }))}
@@ -3821,21 +4003,25 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                                 </div>
                                 <div>
                                   <span style={{ fontSize: '0.7rem', color: 'var(--text-light)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Especialidad / Matrícula</span>
-                                  <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-medium)' }}>{order.specialty} - M.N. {order.licenseNumber}</span>
+                                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-dark)' }}>{order.specialty} {order.licenseNumber ? `- M.N. ${order.licenseNumber}` : ''}</span>
                                 </div>
                                 <div>
                                   <span style={{ fontSize: '0.7rem', color: 'var(--text-light)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Contacto</span>
-                                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-medium)' }}>
-                                    <span>📞 {order.phone}</span>
-                                    {order.email && <span>✉️ {order.email}</span>}
-                                  </div>
-                                </div>
-                                <div>
-                                  <span style={{ fontSize: '0.7rem', color: 'var(--text-light)', display: 'block', fontWeight: 600, textTransform: 'uppercase' }}>Método de Pago</span>
-                                  <span style={{ fontSize: '0.88rem', fontWeight: 700, color: order.paymentMethod === 'transfer' ? 'var(--accent-blue)' : order.paymentMethod === 'mercadopago' ? 'var(--accent-green)' : 'var(--accent-green)' }}>
-                                    {order.paymentMethod === 'transfer' ? 'Landmark Transferencia' : order.paymentMethod === 'mercadopago' ? 'Mercado Pago' : 'Tarjeta Online'}
+                                  <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-dark)', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                    <Phone size={14} color="var(--primary-dark)" /> {order.phone}
                                   </span>
+                                  {order.email && (
+                                    <span style={{ fontSize: '0.75rem', color: 'var(--text-medium)', display: 'block' }}>{order.email}</span>
+                                  )}
                                 </div>
+                              </div>
+
+                              {/* Payment info */}
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                                <span style={{ fontSize: '0.7rem', color: 'var(--text-light)', fontWeight: 600, textTransform: 'uppercase' }}>Método de Pago</span>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: order.paymentMethod?.includes('Transferencia') ? 'var(--accent-blue)' : 'var(--accent-green)' }}>
+                                  {order.paymentMethod || 'No especificado'}
+                                </span>
                               </div>
 
                               {/* Order items table */}
@@ -3866,6 +4052,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                                     </tr>
                                   </tbody>
                                 </table>
+                              </div>
+
+                              {/* Edit Order Action in Expanded View */}
+                              <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.5rem' }}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditExistingOrder(order)}
+                                  style={{
+                                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '0.55rem 1.15rem',
+                                    fontSize: '0.8rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.4rem',
+                                    boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+                                    fontFamily: 'inherit'
+                                  }}
+                                >
+                                  <Edit2 size={14} /> Editar Insumos y Precios de esta Orden
+                                </button>
                               </div>
                             </div>
 

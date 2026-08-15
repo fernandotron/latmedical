@@ -73,6 +73,7 @@ interface InventoryContextType {
   updateStock: (productId: string, variantId: string | undefined, newStock: number, newPrice?: number) => void;
   decrementStockForOrder: (items: OrderItem[]) => void;
   addOrder: (order: Omit<Order, 'id' | 'date' | 'status'>) => Order;
+  updateOrder: (orderId: string, updated: Partial<Order>) => void;
   updateOrderStatus: (orderId: string, status: Order['status']) => void;
   deleteOrder: (orderId: string) => void;
   addClearanceOffer: (offer: Omit<ClearanceOffer, 'id'>) => ClearanceOffer;
@@ -385,6 +386,15 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     );
   };
 
+  const updateOrder = (orderId: string, updatedData: Partial<Order>) => {
+    setOrders((prevOrders) =>
+      prevOrders.map((o) => {
+        if (o.id !== orderId) return o;
+        return { ...o, ...updatedData };
+      })
+    );
+  };
+
   const deleteOrder = (orderId: string) => {
     setOrders((prevOrders) => {
       const orderToDelete = prevOrders.find((o) => o.id === orderId);
@@ -403,6 +413,7 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
       updateStock,
       decrementStockForOrder,
       addOrder,
+      updateOrder,
       updateOrderStatus,
       deleteOrder,
       addClearanceOffer,
