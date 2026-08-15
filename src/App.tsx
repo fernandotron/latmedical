@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CartProvider } from './context/CartContext';
 import { InventoryProvider } from './context/InventoryContext';
+import { ContactsProvider } from './context/ContactsContext';
 import { CurrencyProvider } from './context/CurrencyContext';
 import { Header } from './components/Header';
 import { Hero } from './components/Hero';
@@ -450,8 +451,9 @@ const App: React.FC = () => {
 
   return (
     <InventoryProvider>
-      <CartProvider>
-        <CurrencyProvider>
+      <ContactsProvider>
+        <CartProvider>
+          <CurrencyProvider>
           {/* WordPress style top admin bar */}
         {isAdminLoggedIn && (
           <div style={{
@@ -2010,7 +2012,8 @@ const App: React.FC = () => {
         `}</style>
         </CurrencyProvider>
       </CartProvider>
-    </InventoryProvider>
+    </ContactsProvider>
+  </InventoryProvider>
   );
 };
 

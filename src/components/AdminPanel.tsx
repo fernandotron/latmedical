@@ -31,13 +31,17 @@ import {
   Printer,
   CheckCircle2,
   AlertCircle,
-  LogOut
+  LogOut,
+  Users,
+  UserPlus,
+  MessageSquare
 } from 'lucide-react';
 import defaultSettings from '../data/general_settings.json';
 import defaultSlides from '../data/home_slides.json';
 import { StockReportModal } from './StockReportModal';
+import { useContacts, Contact } from '../context/ContactsContext';
 
-type AdminTab = 'inventory' | 'clearance' | 'orders' | 'manual-order' | 'settings' | 'submissions' | 'add-product' | 'edit-product';
+type AdminTab = 'inventory' | 'clearance' | 'orders' | 'manual-order' | 'contacts' | 'settings' | 'submissions' | 'add-product' | 'edit-product';
 
 interface AdminPanelProps {
   isAdminLoggedIn: boolean;
@@ -59,6 +63,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
     deleteClearanceOffer,
     toggleClearanceOffer
   } = useInventory();
+  const { contacts, addContact, updateContact, deleteContact, saveContactFromOrder } = useContacts();
   const [activeTab, setActiveTab] = useState<AdminTab>('inventory');
   
   // Expanded Orders state for collapsing/expanding
@@ -266,6 +271,128 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
   const [moGlobalDiscountUSD, setMoGlobalDiscountUSD] = useState<string>('0');
   const [moDecrementStock, setMoDecrementStock] = useState<boolean>(true);
 
+  // Contacts Management State
+  const [contactSearchQuery, setContactSearchQuery] = useState('');
+  const [isContactModalOpen, setIsContactModalOpen] = useState(false);
+  const [editingContact, setEditingContact] = useState<Contact | null>(null);
+  const [contactForm, setContactForm] = useState({
+    fullName: '',
+    specialty: '',
+    licenseNumber: '',
+    phone: '',
+    email: '',
+    address: '',
+    city: 'CABA',
+    province: 'Buenos Aires',
+    notes: ''
+  });
+
+  // POS Autocomplete State
+  const [moContactDropdownOpen, setMoContactDropdownOpen] = useState(false);
+
+  // Filtered contacts for live autocomplete
+  const moMatchingContacts = contacts.filter(cnt => {
+    if (!moCustomerName.trim()) return true;
+    const q = moCustomerName.toLowerCase().trim();
+    return (
+      cnt.fullName.toLowerCase().includes(q) ||
+      (cnt.phone && cnt.phone.includes(q)) ||
+      (cnt.licenseNumber && cnt.licenseNumber.toLowerCase().includes(q)) ||
+      (cnt.specialty && cnt.specialty.toLowerCase().includes(q)) ||
+      (cnt.city && cnt.city.toLowerCase().includes(q))
+    );
+  }).slice(0, 8);
+
+  const handleSelectContactForOrder = (cnt: Contact) => {
+    setMoCustomerName(cnt.fullName || '');
+    setMoCustomerPhone(cnt.phone || '');
+    setMoCustomerEmail(cnt.email || '');
+    setMoCustomerSpecialty(cnt.specialty || '');
+    setMoCustomerLicense(cnt.licenseNumber || '');
+    setMoCustomerAddress(cnt.address || '');
+    setMoCustomerCity(cnt.city || 'CABA');
+    setMoCustomerProvince(cnt.province || 'Buenos Aires');
+    setMoContactDropdownOpen(false);
+  };
+
+  const handleCreateOrderForContact = (cnt: Contact) => {
+    handleClearManualOrder();
+    handleSelectContactForOrder(cnt);
+    setActiveTab('manual-order');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleOpenAddContactModal = () => {
+    setEditingContact(null);
+    setContactForm({
+      fullName: '',
+      specialty: '',
+      licenseNumber: '',
+      phone: '',
+      email: '',
+      address: '',
+      city: 'CABA',
+      province: 'Buenos Aires',
+      notes: ''
+    });
+    setIsContactModalOpen(true);
+  };
+
+  const handleOpenEditContactModal = (cnt: Contact) => {
+    setEditingContact(cnt);
+    setContactForm({
+      fullName: cnt.fullName || '',
+      specialty: cnt.specialty || '',
+      licenseNumber: cnt.licenseNumber || '',
+      phone: cnt.phone || '',
+      email: cnt.email || '',
+      address: cnt.address || '',
+      city: cnt.city || 'CABA',
+      province: cnt.province || 'Buenos Aires',
+      notes: cnt.notes || ''
+    });
+    setIsContactModalOpen(true);
+  };
+
+  const handleSaveContactModal = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!contactForm.fullName.trim()) {
+      alert('Por favor ingrese el nombre del profesional o clínica.');
+      return;
+    }
+    if (!contactForm.phone.trim()) {
+      alert('Por favor ingrese el teléfono o WhatsApp de contacto.');
+      return;
+    }
+
+    if (editingContact) {
+      updateContact(editingContact.id, {
+        fullName: contactForm.fullName.trim(),
+        specialty: contactForm.specialty.trim() || undefined,
+        licenseNumber: contactForm.licenseNumber.trim() || undefined,
+        phone: contactForm.phone.trim(),
+        email: contactForm.email.trim() || undefined,
+        address: contactForm.address.trim() || undefined,
+        city: contactForm.city.trim() || 'CABA',
+        province: contactForm.province.trim() || 'Buenos Aires',
+        notes: contactForm.notes.trim() || undefined
+      });
+    } else {
+      addContact({
+        fullName: contactForm.fullName.trim(),
+        specialty: contactForm.specialty.trim() || undefined,
+        licenseNumber: contactForm.licenseNumber.trim() || undefined,
+        phone: contactForm.phone.trim(),
+        email: contactForm.email.trim() || undefined,
+        address: contactForm.address.trim() || undefined,
+        city: contactForm.city.trim() || 'CABA',
+        province: contactForm.province.trim() || 'Buenos Aires',
+        notes: contactForm.notes.trim() || undefined
+      });
+    }
+    setIsContactModalOpen(false);
+  };
+
   // Success Feedback & Editing State
   const [moCreatedOrder, setMoCreatedOrder] = useState<Order | null>(null);
   const [moEditingOrderId, setMoEditingOrderId] = useState<string | null>(null);
@@ -470,6 +597,22 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
       });
 
       setMoCreatedOrder(created);
+    }
+
+    // Auto-save or update customer in Contacts directory
+    try {
+      saveContactFromOrder({
+        fullName: moCustomerName.trim(),
+        phone: moCustomerPhone.trim(),
+        email: moCustomerEmail.trim() || undefined,
+        specialty: moCustomerSpecialty.trim() || undefined,
+        licenseNumber: moCustomerLicense.trim() || undefined,
+        address: moCustomerAddress.trim() || undefined,
+        city: moCustomerCity.trim() || undefined,
+        province: moCustomerProvince.trim() || undefined
+      });
+    } catch (err) {
+      console.warn('Error auto-saving contact from POS:', err);
     }
   };
 
@@ -1380,6 +1523,45 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                       color: activeTab === 'orders' ? '#15803d' : '#64748b'
                     }}>
                       {orders.length}
+                    </span>
+                  </button>
+
+                  {/* Tab: Contactos / Directorio Médico */}
+                  <button
+                    onClick={() => setActiveTab('contacts')}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '0.7rem 0.85rem',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '0.84rem',
+                      fontWeight: activeTab === 'contacts' ? 700 : 500,
+                      cursor: 'pointer',
+                      background: activeTab === 'contacts' ? '#f0fdf4' : 'transparent',
+                      color: activeTab === 'contacts' ? '#166534' : 'var(--text-dark)',
+                      boxShadow: activeTab === 'contacts' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
+                      borderLeft: activeTab === 'contacts' ? '4px solid #16a34a' : '4px solid transparent',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'left',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                      <Users size={17} color={activeTab === 'contacts' ? '#16a34a' : '#64748b'} />
+                      <span>Directorio Contactos</span>
+                    </div>
+                    <span style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 800,
+                      padding: '0.15rem 0.5rem',
+                      borderRadius: '12px',
+                      background: activeTab === 'contacts' ? '#dcfce7' : '#f1f5f9',
+                      color: activeTab === 'contacts' ? '#15803d' : '#64748b'
+                    }}>
+                      {contacts.length}
                     </span>
                   </button>
 
@@ -3580,18 +3762,113 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   </h3>
 
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.3rem' }}>
-                        Nombre del Médico o Razón Social *
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Ej: Dr. Martín Benítez / Clínica Estética"
-                        value={moCustomerName}
-                        onChange={e => setMoCustomerName(e.target.value)}
-                        required
-                        style={{ width: '100%', height: '36px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit' }}
-                      />
+                    <div style={{ position: 'relative' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                        <label style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-medium)' }}>
+                          Nombre del Médico o Razón Social *
+                        </label>
+                        <span style={{ fontSize: '0.68rem', color: '#2563eb', fontWeight: 600 }}>
+                          💡 Autocompleta desde Contactos
+                        </span>
+                      </div>
+                      <div style={{ position: 'relative' }}>
+                        <input
+                          type="text"
+                          placeholder="Escriba el nombre o clínica (ej: Dra. Valeria Gómez)..."
+                          value={moCustomerName}
+                          onChange={e => {
+                            setMoCustomerName(e.target.value);
+                            setMoContactDropdownOpen(true);
+                          }}
+                          onFocus={() => setMoContactDropdownOpen(true)}
+                          required
+                          style={{
+                            width: '100%',
+                            height: '38px',
+                            padding: '0 0.65rem',
+                            borderRadius: '6px',
+                            border: '1px solid #cbd5e1',
+                            fontSize: '0.84rem',
+                            outline: 'none',
+                            fontFamily: 'inherit'
+                          }}
+                        />
+
+                        {/* Live Contacts Autocomplete Dropdown */}
+                        {moContactDropdownOpen && moMatchingContacts.length > 0 && (
+                          <div
+                            style={{
+                              position: 'absolute',
+                              top: 'calc(100% + 4px)',
+                              left: 0,
+                              right: 0,
+                              background: '#ffffff',
+                              border: '1.5px solid #93c5fd',
+                              borderRadius: '8px',
+                              boxShadow: '0 12px 28px -4px rgba(15, 23, 42, 0.18)',
+                              zIndex: 100,
+                              maxHeight: '230px',
+                              overflowY: 'auto'
+                            }}
+                          >
+                            <div style={{
+                              padding: '0.4rem 0.75rem',
+                              background: '#eff6ff',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              color: '#1d4ed8',
+                              borderBottom: '1px solid #dbeafe',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}>
+                              <span>Contactos Guardados ({moMatchingContacts.length})</span>
+                              <button
+                                type="button"
+                                onClick={() => setMoContactDropdownOpen(false)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: '0.72rem', color: '#64748b', fontWeight: 700 }}
+                              >
+                                Cerrar ✕
+                              </button>
+                            </div>
+                            {moMatchingContacts.map((cnt) => (
+                              <div
+                                key={cnt.id}
+                                onClick={() => handleSelectContactForOrder(cnt)}
+                                style={{
+                                  padding: '0.65rem 0.85rem',
+                                  cursor: 'pointer',
+                                  borderBottom: '1px solid #f1f5f9',
+                                  transition: 'background 0.15s ease'
+                                }}
+                                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f0fdf4')}
+                                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#ffffff')}
+                              >
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontWeight: 800, fontSize: '0.84rem', color: 'var(--primary-dark)' }}>
+                                    {cnt.fullName}
+                                  </span>
+                                  <span style={{
+                                    fontSize: '0.7rem',
+                                    fontWeight: 700,
+                                    color: '#16a34a',
+                                    background: '#dcfce7',
+                                    padding: '0.1rem 0.45rem',
+                                    borderRadius: '4px'
+                                  }}>
+                                    {cnt.city || 'Contacto'}
+                                  </span>
+                                </div>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--text-medium)', display: 'flex', flexWrap: 'wrap', gap: '0.6rem', marginTop: '0.2rem' }}>
+                                  <span>📞 {cnt.phone}</span>
+                                  {cnt.licenseNumber && <span>M.N. {cnt.licenseNumber}</span>}
+                                  {cnt.specialty && <span>• {cnt.specialty}</span>}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
@@ -4123,6 +4400,387 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
         })()}
 
         {/* ============================================================== */}
+        {/* TAB: CONTACTS / CRM MEDICAL DIRECTORY */}
+        {/* ============================================================== */}
+        {activeTab === 'contacts' && (() => {
+          const filteredContacts = contacts.filter(c => {
+            if (!contactSearchQuery.trim()) return true;
+            const q = contactSearchQuery.toLowerCase().trim();
+            return (
+              c.fullName.toLowerCase().includes(q) ||
+              (c.phone && c.phone.includes(q)) ||
+              (c.email && c.email.toLowerCase().includes(q)) ||
+              (c.licenseNumber && c.licenseNumber.toLowerCase().includes(q)) ||
+              (c.specialty && c.specialty.toLowerCase().includes(q)) ||
+              (c.city && c.city.toLowerCase().includes(q)) ||
+              (c.province && c.province.toLowerCase().includes(q))
+            );
+          });
+
+          return (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'fadeIn 0.4s ease' }}>
+              
+              {/* Header Banner & Actions */}
+              <div style={{
+                background: '#ffffff',
+                border: '1px solid var(--border-light)',
+                borderRadius: '12px',
+                padding: '1.25rem 1.5rem',
+                boxShadow: 'var(--shadow-sm)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}>
+                <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
+                  <div style={{
+                    width: '44px',
+                    height: '44px',
+                    borderRadius: '10px',
+                    background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                    color: '#ffffff',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <Users size={22} />
+                  </div>
+                  <div>
+                    <h2 style={{ margin: '0 0 0.2rem 0', fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
+                      Directorio de Contactos & Médicos B2B
+                    </h2>
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-medium)' }}>
+                      Base de datos de médicos, cirujanos y clínicas registradas. Los pedidos realizados autoguardan y actualizan estos contactos automáticamente.
+                    </p>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                  <button
+                    type="button"
+                    onClick={handleOpenAddContactModal}
+                    style={{
+                      background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.65rem 1.25rem',
+                      fontSize: '0.84rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.45rem',
+                      boxShadow: '0 4px 12px rgba(22, 163, 74, 0.25)',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <UserPlus size={16} /> + Nuevo Contacto
+                  </button>
+                </div>
+              </div>
+
+              {/* Search & Filter Toolbar */}
+              <div style={{
+                background: '#ffffff',
+                border: '1px solid var(--border-light)',
+                borderRadius: '10px',
+                padding: '0.85rem 1.25rem',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}>
+                <div style={{ position: 'relative', flex: '1 1 300px', maxWidth: '450px' }}>
+                  <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                  <input
+                    type="text"
+                    placeholder="Buscar por médico, matrícula, teléfono, email o ciudad..."
+                    value={contactSearchQuery}
+                    onChange={e => setContactSearchQuery(e.target.value)}
+                    style={{
+                      width: '100%',
+                      height: '36px',
+                      padding: '0 0.75rem 0 2.25rem',
+                      borderRadius: '6px',
+                      border: '1px solid #cbd5e1',
+                      fontSize: '0.82rem',
+                      outline: 'none',
+                      fontFamily: 'inherit'
+                    }}
+                  />
+                  {contactSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setContactSearchQuery('')}
+                      style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '0.8rem' }}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{ fontSize: '0.82rem', color: 'var(--text-medium)', fontWeight: 600 }}>
+                    Mostrando <strong>{filteredContacts.length}</strong> de <strong>{contacts.length}</strong> contactos
+                  </span>
+                </div>
+              </div>
+
+              {/* Contacts Table */}
+              {filteredContacts.length === 0 ? (
+                <div style={{
+                  textAlign: 'center',
+                  padding: '4rem 2rem',
+                  background: '#ffffff',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '12px',
+                  color: 'var(--text-medium)'
+                }}>
+                  <Users size={44} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                  <h3 style={{ margin: '0 0 0.5rem 0', fontWeight: 700, fontSize: '1.1rem' }}>No se encontraron contactos</h3>
+                  <p style={{ margin: 0, fontSize: '0.85rem' }}>
+                    {contactSearchQuery ? 'Pruebe con otro término de búsqueda.' : 'Haga clic en "+ Nuevo Contacto" o procese un pedido para agregar automáticamente a los clientes.'}
+                  </p>
+                </div>
+              ) : (
+                <div style={{
+                  background: '#ffffff',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+                      <thead>
+                        <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-light)', color: 'var(--text-medium)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                          <th style={{ padding: '0.85rem 1.25rem' }}>Profesional / Clínica</th>
+                          <th style={{ padding: '0.85rem 1rem' }}>Especialidad & Matrícula</th>
+                          <th style={{ padding: '0.85rem 1rem' }}>Teléfono / WhatsApp</th>
+                          <th style={{ padding: '0.85rem 1rem' }}>Email & Ubicación</th>
+                          <th style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>Historial Pedidos</th>
+                          <th style={{ padding: '0.85rem 1.25rem', textAlign: 'right', minWidth: '180px' }}>Acciones</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredContacts.map((cnt, idx) => {
+                          const clientOrders = orders.filter(o => 
+                            (cnt.phone && o.phone && o.phone.replace(/\D/g, '') !== '' && cnt.phone.replace(/\D/g, '') === o.phone.replace(/\D/g, '')) ||
+                            (o.fullName && cnt.fullName && o.fullName.trim().toLowerCase() === cnt.fullName.trim().toLowerCase())
+                          );
+                          const totalOrdersCount = clientOrders.length;
+                          const totalSpendUSD = clientOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+
+                          const initials = cnt.fullName
+                            .split(' ')
+                            .filter(Boolean)
+                            .slice(0, 2)
+                            .map(w => w[0])
+                            .join('')
+                            .toUpperCase() || 'LM';
+
+                          const cleanPhone = cnt.phone.replace(/\D/g, '');
+
+                          return (
+                            <tr key={cnt.id} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                              {/* Name & Avatar */}
+                              <td style={{ padding: '0.85rem 1.25rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                  <div style={{
+                                    width: '36px',
+                                    height: '36px',
+                                    borderRadius: '50%',
+                                    background: 'linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%)',
+                                    color: '#1d4ed8',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    fontWeight: 800,
+                                    fontSize: '0.78rem',
+                                    border: '1px solid #bfdbfe',
+                                    flexShrink: 0
+                                  }}>
+                                    {initials}
+                                  </div>
+                                  <div>
+                                    <div style={{ fontWeight: 800, color: 'var(--primary-dark)', fontSize: '0.88rem' }}>
+                                      {cnt.fullName}
+                                    </div>
+                                    {cnt.notes && (
+                                      <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', marginTop: '0.1rem' }}>
+                                        {cnt.notes}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Specialty & License */}
+                              <td style={{ padding: '0.85rem 1rem' }}>
+                                <div style={{ fontWeight: 600, color: 'var(--text-dark)' }}>
+                                  {cnt.specialty || 'Médico / Profesional B2B'}
+                                </div>
+                                {cnt.licenseNumber && (
+                                  <div style={{ fontSize: '0.74rem', color: '#0284c7', fontWeight: 700, marginTop: '0.15rem' }}>
+                                    M.N. {cnt.licenseNumber}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Phone / WhatsApp */}
+                              <td style={{ padding: '0.85rem 1rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                  <span style={{ fontWeight: 600, color: 'var(--text-dark)' }}>{cnt.phone}</span>
+                                  {cleanPhone && (
+                                    <a
+                                      href={`https://wa.me/${cleanPhone.startsWith('54') ? cleanPhone : '54' + cleanPhone}?text=Hola%20${encodeURIComponent(cnt.fullName)},%20te%20escribimos%20desde%20Latmedical.`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      style={{
+                                        color: '#16a34a',
+                                        background: '#dcfce7',
+                                        padding: '0.15rem 0.4rem',
+                                        borderRadius: '4px',
+                                        fontSize: '0.7rem',
+                                        fontWeight: 700,
+                                        textDecoration: 'none',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.2rem'
+                                      }}
+                                      title="Abrir chat en WhatsApp"
+                                    >
+                                      <MessageSquare size={11} /> WA
+                                    </a>
+                                  )}
+                                </div>
+                              </td>
+
+                              {/* Email & Location */}
+                              <td style={{ padding: '0.85rem 1rem' }}>
+                                {cnt.email && (
+                                  <div style={{ color: 'var(--text-medium)', fontSize: '0.78rem' }}>
+                                    {cnt.email}
+                                  </div>
+                                )}
+                                <div style={{ fontSize: '0.74rem', color: 'var(--text-light)', marginTop: '0.15rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                                  <MapPin size={12} color="#16a34a" />
+                                  <span>{cnt.city || 'CABA'}, {cnt.province || 'Buenos Aires'}</span>
+                                </div>
+                              </td>
+
+                              {/* Orders Stats */}
+                              <td style={{ padding: '0.85rem 1rem', textAlign: 'center' }}>
+                                <div style={{ fontWeight: 800, color: totalOrdersCount > 0 ? '#2563eb' : '#94a3b8', fontSize: '0.88rem' }}>
+                                  {totalOrdersCount} {totalOrdersCount === 1 ? 'pedido' : 'pedidos'}
+                                </div>
+                                {totalSpendUSD > 0 && (
+                                  <div style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 700, marginTop: '0.15rem' }}>
+                                    USD ${totalSpendUSD.toFixed(2)}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Actions */}
+                              <td style={{ padding: '0.85rem 1.25rem', textAlign: 'right' }}>
+                                <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                                  
+                                  {/* Fast POS Order Creator for this Contact */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCreateOrderForContact(cnt)}
+                                    style={{
+                                      background: '#eff6ff',
+                                      border: '1px solid #bfdbfe',
+                                      color: '#1d4ed8',
+                                      borderRadius: '6px',
+                                      padding: '0.35rem 0.65rem',
+                                      fontSize: '0.76rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.3rem',
+                                      fontFamily: 'inherit',
+                                      transition: 'all 0.15s'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#dbeafe'}
+                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#eff6ff'}
+                                    title="Cargar una venta o proforma para este contacto"
+                                  >
+                                    <Receipt size={13} /> + Pedido
+                                  </button>
+
+                                  {/* Edit Contact Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenEditContactModal(cnt)}
+                                    style={{
+                                      background: '#f8fafc',
+                                      border: '1px solid #cbd5e1',
+                                      color: '#475569',
+                                      borderRadius: '6px',
+                                      padding: '0.35rem 0.55rem',
+                                      fontSize: '0.76rem',
+                                      fontWeight: 700,
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      gap: '0.25rem',
+                                      fontFamily: 'inherit'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#e2e8f0'}
+                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                                    title="Editar datos del contacto"
+                                  >
+                                    <Edit2 size={13} />
+                                  </button>
+
+                                  {/* Delete Contact Button */}
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      if (window.confirm(`¿Desea eliminar a "${cnt.fullName}" del directorio de contactos?`)) {
+                                        deleteContact(cnt.id);
+                                      }
+                                    }}
+                                    style={{
+                                      background: '#fee2e2',
+                                      border: 'none',
+                                      color: '#dc2626',
+                                      borderRadius: '6px',
+                                      padding: '0.35rem 0.5rem',
+                                      cursor: 'pointer',
+                                      display: 'inline-flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.backgroundColor = '#fecaca'}
+                                    onMouseLeave={e => e.currentTarget.style.backgroundColor = '#fee2e2'}
+                                    title="Eliminar contacto"
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          );
+        })()}
+
+        {/* ============================================================== */}
         {/* TAB 3: FORM SUBMISSIONS LIST */}
         {/* ============================================================== */}
         {activeTab === 'submissions' && (() => {
@@ -4516,6 +5174,201 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
 
           </main>
         </div>
+
+        {/* Contact Create / Edit Modal */}
+        {isContactModalOpen && (
+          <div style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'rgba(15, 23, 42, 0.65)',
+            backdropFilter: 'blur(4px)',
+            zIndex: 100000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: '1rem',
+            boxSizing: 'border-box'
+          }}>
+            <div style={{
+              background: '#ffffff',
+              borderRadius: '16px',
+              maxWidth: '560px',
+              width: '100%',
+              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+              overflow: 'hidden',
+              animation: 'fadeIn 0.25s ease'
+            }}>
+              {/* Modal Header */}
+              <div style={{
+                padding: '1.25rem 1.5rem',
+                borderBottom: '1px solid var(--border-light)',
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                background: '#f8fafc'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                  <UserPlus size={20} color="#16a34a" />
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
+                    {editingContact ? 'Editar Contacto / Profesional' : 'Registrar Nuevo Contacto B2B'}
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsContactModalOpen(false)}
+                  style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#64748b' }}
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Modal Form Body */}
+              <form onSubmit={handleSaveContactModal} style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.35rem' }}>
+                    Nombre del Profesional o Clínica *
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Ej: Dra. Valeria Gómez / Centro Dermatológico"
+                    value={contactForm.fullName}
+                    onChange={e => setContactForm({ ...contactForm, fullName: e.target.value })}
+                    required
+                    style={{ width: '100%', height: '38px', padding: '0 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.35rem' }}>
+                      Teléfono / WhatsApp *
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: +54 9 11 4455-8899"
+                      value={contactForm.phone}
+                      onChange={e => setContactForm({ ...contactForm, phone: e.target.value })}
+                      required
+                      style={{ width: '100%', height: '38px', padding: '0 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.35rem' }}>
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      placeholder="doctor@clinica.com"
+                      value={contactForm.email}
+                      onChange={e => setContactForm({ ...contactForm, email: e.target.value })}
+                      style={{ width: '100%', height: '38px', padding: '0 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.35rem' }}>
+                      Especialidad
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: Cirujano Plástico, Dermatóloga..."
+                      value={contactForm.specialty}
+                      onChange={e => setContactForm({ ...contactForm, specialty: e.target.value })}
+                      style={{ width: '100%', height: '38px', padding: '0 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.35rem' }}>
+                      Matrícula Médica (M.N.)
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: 142.857"
+                      value={contactForm.licenseNumber}
+                      onChange={e => setContactForm({ ...contactForm, licenseNumber: e.target.value })}
+                      style={{ width: '100%', height: '38px', padding: '0 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.35rem' }}>
+                    Dirección de Despacho
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Calle, número, piso o consultorio"
+                    value={contactForm.address}
+                    onChange={e => setContactForm({ ...contactForm, address: e.target.value })}
+                    style={{ width: '100%', height: '38px', padding: '0 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
+                  />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.35rem' }}>
+                      Ciudad / Barrio
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Ej: CABA / Recoleta"
+                      value={contactForm.city}
+                      onChange={e => setContactForm({ ...contactForm, city: e.target.value })}
+                      style={{ width: '100%', height: '38px', padding: '0 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.35rem' }}>
+                      Provincia
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Buenos Aires"
+                      value={contactForm.province}
+                      onChange={e => setContactForm({ ...contactForm, province: e.target.value })}
+                      style={{ width: '100%', height: '38px', padding: '0 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none', fontFamily: 'inherit' }}
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.35rem' }}>
+                    Notas Internas / Observaciones
+                  </label>
+                  <textarea
+                    rows={2}
+                    placeholder="Condiciones acordadas, preferencias de productos..."
+                    value={contactForm.notes}
+                    onChange={e => setContactForm({ ...contactForm, notes: e.target.value })}
+                    style={{ width: '100%', padding: '0.5rem 0.75rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit', resize: 'vertical' }}
+                  />
+                </div>
+
+                {/* Buttons */}
+                <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem', marginTop: '0.5rem' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsContactModalOpen(false)}
+                    style={{ background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '0.6rem 1.2rem', fontSize: '0.84rem', fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="submit"
+                    style={{ background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)', color: '#ffffff', border: 'none', borderRadius: '6px', padding: '0.6rem 1.4rem', fontSize: '0.84rem', fontWeight: 800, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.4rem', fontFamily: 'inherit', boxShadow: '0 2px 8px rgba(22, 163, 74, 0.3)' }}
+                  >
+                    <Save size={16} /> {editingContact ? 'Guardar Cambios' : 'Registrar Contacto'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Stock PDF / Excel Report Modal */}
         <StockReportModal

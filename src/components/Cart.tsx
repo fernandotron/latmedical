@@ -4,6 +4,7 @@ import { useCart } from '../context/CartContext';
 import { useCurrency } from '../context/CurrencyContext';
 import { getAssetUrl } from '../utils/assets';
 import { useInventory, OrderItem } from '../context/InventoryContext';
+import { useContacts } from '../context/ContactsContext';
 import defaultSettings from '../data/general_settings.json';
 import { QuotationGenerator } from './QuotationGenerator';
 
@@ -17,6 +18,7 @@ type CheckoutStep = 'cart' | 'checkout' | 'success';
 export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
   const { cartItems, updateQuantity, removeFromCart, clearCart, cartTotal, getItemFreeQty } = useCart();
   const { addOrder } = useInventory();
+  const { saveContactFromOrder } = useContacts();
   const { formatPrice, currency } = useCurrency();
   const [step, setStep] = useState<CheckoutStep>('cart');
   const [orderNumber, setOrderNumber] = useState<string>('');
@@ -127,6 +129,22 @@ export const Cart: React.FC<CartProps> = ({ isOpen, toggleCart }) => {
       items: orderItems,
       total: cartTotal
     });
+
+    // Auto-save client in contacts directory
+    try {
+      saveContactFromOrder({
+        fullName: formData.fullName,
+        phone: formData.phone,
+        email: formData.email,
+        specialty: formData.specialty,
+        licenseNumber: formData.licenseNumber,
+        address: formData.address,
+        city: formData.city,
+        province: formData.province
+      });
+    } catch (err) {
+      console.warn('Error auto-saving contact:', err);
+    }
 
     setOrderNumber(newOrder.id);
     setStep('success');

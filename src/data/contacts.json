@@ -1,0 +1,30 @@
+[
+  {
+    "id": "cnt-1",
+    "fullName": "Ivana Ruano",
+    "specialty": "Médico Estético",
+    "licenseNumber": "Venta Especial Admin",
+    "phone": "+54 9 11 5939-4189",
+    "email": "ivanaruano@gmail.com",
+    "address": "Despacho a convenir",
+    "city": "CABA",
+    "province": "Buenos Aires",
+    "notes": "Cliente recurrente B2B",
+    "createdAt": "15 de ago de 2026",
+    "timestamp": 1786790000000
+  },
+  {
+    "id": "cnt-2",
+    "fullName": "Dra. Valeria Gómez",
+    "specialty": "Dermatología y Estética",
+    "licenseNumber": "142857",
+    "phone": "+54 9 11 4455-8899",
+    "email": "contacto@dragomez.com",
+    "address": "Av. Santa Fe 2345, Piso 4",
+    "city": "Recoleta",
+    "province": "Buenos Aires",
+    "notes": "Especialista en Hilos V-Lift Pro y Bioestimuladores",
+    "createdAt": "10 de ago de 2026",
+    "timestamp": 1786358400000
+  }
+]
