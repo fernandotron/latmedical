@@ -22,13 +22,21 @@ import {
   RefreshCw,
   Flame,
   Download,
-  FileText
+  FileText,
+  ShoppingCart,
+  Receipt,
+  Search,
+  User,
+  Send,
+  Printer,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import defaultSettings from '../data/general_settings.json';
 import defaultSlides from '../data/home_slides.json';
 import { StockReportModal } from './StockReportModal';
 
-type AdminTab = 'inventory' | 'clearance' | 'orders' | 'settings' | 'submissions' | 'add-product' | 'edit-product';
+type AdminTab = 'inventory' | 'clearance' | 'orders' | 'manual-order' | 'settings' | 'submissions' | 'add-product' | 'edit-product';
 
 interface AdminPanelProps {
   isAdminLoggedIn: boolean;
@@ -43,6 +51,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
     updateStock, 
     updateOrderStatus, 
     deleteOrder,
+    addOrder,
     addClearanceOffer,
     updateClearanceOffer,
     deleteClearanceOffer,
@@ -219,6 +228,159 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
     setTimeout(() => {
       setSavedFeedback(prev => ({ ...prev, [id]: false }));
     }, 2000);
+  };
+
+  // Manual Order (Holded ERP style) State
+  interface ManualOrderItem {
+    lineId: string;
+    productId: string;
+    variantId?: string;
+    variantName?: string;
+    productName: string;
+    brand: string;
+    image: string;
+    stock: number;
+    regularPrice: number;
+    price: number; // Editable custom price (USD)
+    quantity: number;
+  }
+
+  const [moItems, setMoItems] = useState<ManualOrderItem[]>([]);
+  const [moSearchQuery, setMoSearchQuery] = useState('');
+  const [moSelectedBrand, setMoSelectedBrand] = useState<'all' | 'Vlift Pro' | 'Seffiline'>('all');
+  
+  // Customer Details
+  const [moCustomerName, setMoCustomerName] = useState('');
+  const [moCustomerPhone, setMoCustomerPhone] = useState('');
+  const [moCustomerEmail, setMoCustomerEmail] = useState('');
+  const [moCustomerSpecialty, setMoCustomerSpecialty] = useState('');
+  const [moCustomerLicense, setMoCustomerLicense] = useState('');
+  const [moCustomerAddress, setMoCustomerAddress] = useState('');
+  const [moCustomerCity, setMoCustomerCity] = useState('');
+  const [moCustomerProvince, setMoCustomerProvince] = useState('Buenos Aires');
+  const [moPaymentMethod, setMoPaymentMethod] = useState('Transferencia Bancaria');
+  const [moOrderStatus, setMoOrderStatus] = useState<Order['status']>('Aprobado');
+  const [moOrderNotes, setMoOrderNotes] = useState('');
+  const [moGlobalDiscountUSD, setMoGlobalDiscountUSD] = useState<string>('0');
+  const [moDecrementStock, setMoDecrementStock] = useState<boolean>(true);
+
+  // Success Feedback
+  const [moCreatedOrder, setMoCreatedOrder] = useState<Order | null>(null);
+  const [moError, setMoError] = useState<string>('');
+
+  // Add a product or variant line to the order
+  const handleAddProductToManualOrder = (prod: Product, variant?: { id: string; name: string; price?: number; stock: number }, initialStock?: number) => {
+    const vName = variant ? variant.name : undefined;
+    const vId = variant ? variant.id : undefined;
+    const regPrice = (variant && variant.price !== undefined) ? variant.price : prod.price;
+    const stockAvailable = variant ? variant.stock : (initialStock !== undefined ? initialStock : 0);
+
+    const existingIndex = moItems.findIndex(i => i.productId === prod.id && i.variantName === vName);
+
+    if (existingIndex >= 0) {
+      setMoItems(prev => prev.map((item, idx) => idx === existingIndex ? { ...item, quantity: item.quantity + 1 } : item));
+    } else {
+      const newItem: ManualOrderItem = {
+        lineId: `line-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
+        productId: prod.id,
+        variantId: vId,
+        variantName: vName,
+        productName: prod.name,
+        brand: prod.brand,
+        image: prod.image,
+        stock: stockAvailable,
+        regularPrice: regPrice,
+        price: regPrice, // Starts with default price, completely editable!
+        quantity: 1
+      };
+      setMoItems(prev => [newItem, ...prev]);
+    }
+  };
+
+  const handleUpdateManualOrderLine = (lineId: string, field: 'quantity' | 'price', val: number) => {
+    setMoItems(prev => prev.map(item => {
+      if (item.lineId !== lineId) return item;
+      if (field === 'quantity') {
+        return { ...item, quantity: Math.max(1, Math.round(val) || 1) };
+      }
+      if (field === 'price') {
+        return { ...item, price: Math.max(0, val || 0) };
+      }
+      return item;
+    }));
+  };
+
+  const handleRemoveManualOrderLine = (lineId: string) => {
+    setMoItems(prev => prev.filter(item => item.lineId !== lineId));
+  };
+
+  const handleClearManualOrder = () => {
+    setMoItems([]);
+    setMoCustomerName('');
+    setMoCustomerPhone('');
+    setMoCustomerEmail('');
+    setMoCustomerSpecialty('');
+    setMoCustomerLicense('');
+    setMoCustomerAddress('');
+    setMoCustomerCity('');
+    setMoCustomerProvince('Buenos Aires');
+    setMoPaymentMethod('Transferencia Bancaria');
+    setMoOrderStatus('Aprobado');
+    setMoOrderNotes('');
+    setMoGlobalDiscountUSD('0');
+    setMoCreatedOrder(null);
+    setMoError('');
+  };
+
+  // Calculations
+  const moSubtotalUSD = moItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  const moDiscountNum = Math.max(0, parseFloat(moGlobalDiscountUSD) || 0);
+  const moTotalUSD = Math.max(0, moSubtotalUSD - moDiscountNum);
+  const moTotalUnits = moItems.reduce((sum, item) => sum + item.quantity, 0);
+
+  // Process and save manual order
+  const handleProcessManualOrder = (e: React.FormEvent) => {
+    e.preventDefault();
+    setMoError('');
+
+    if (moItems.length === 0) {
+      setMoError('Debe agregar al menos un producto a la orden de venta.');
+      return;
+    }
+
+    if (!moCustomerName.trim()) {
+      setMoError('Por favor ingrese el nombre del médico, clínica o cliente.');
+      return;
+    }
+
+    const orderItems = moItems.map(item => ({
+      productId: item.productId,
+      productName: item.productName,
+      brand: item.brand,
+      variantName: item.variantName,
+      quantity: item.quantity,
+      price: item.price
+    }));
+
+    const created = addOrder({
+      fullName: moCustomerName.trim(),
+      phone: moCustomerPhone.trim() || 'Sin teléfono',
+      email: moCustomerEmail.trim() || undefined,
+      specialty: moCustomerSpecialty.trim() || 'Médico / Clínica B2B',
+      licenseNumber: moCustomerLicense.trim() || 'Venta Especial Admin',
+      address: moCustomerAddress.trim() || 'Despacho a convenir',
+      city: moCustomerCity.trim() || 'CABA',
+      province: moCustomerProvince.trim() || 'Buenos Aires',
+      paymentMethod: moPaymentMethod,
+      items: orderItems,
+      total: moTotalUSD
+    });
+
+    if (moOrderStatus !== 'Pendiente') {
+      updateOrderStatus(created.id, moOrderStatus);
+    }
+
+    setMoCreatedOrder({ ...created, status: moOrderStatus });
   };
 
   // Expanded Products state for collapsing multiple calibers
@@ -1043,6 +1205,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                 <ClipboardList size={14} /> Pedidos ({orders.length})
               </button>
               <button
+                onClick={() => {
+                  setMoCreatedOrder(null);
+                  setActiveTab('manual-order');
+                }}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '0.4rem',
+                  padding: '0.5rem 1.1rem', border: 'none', borderRadius: '6px',
+                  fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer',
+                  background: activeTab === 'manual-order' ? '#2563eb' : 'transparent',
+                  color: activeTab === 'manual-order' ? '#ffffff' : '#2563eb',
+                  boxShadow: activeTab === 'manual-order' ? 'var(--shadow-sm)' : 'none',
+                  transition: 'var(--transition-fast)',
+                  fontFamily: 'inherit'
+                }}
+              >
+                <Receipt size={14} color={activeTab === 'manual-order' ? '#ffffff' : '#2563eb'} /> + Crear Venta / Pedido
+              </button>
+              <button
                 onClick={() => setActiveTab('submissions')}
                 style={{
                   display: 'flex', alignItems: 'center', gap: '0.4rem',
@@ -1386,92 +1566,144 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
         {/* TAB 1: INVENTORY & PRICES MANAGEMENT */}
         {/* ============================================================== */}
         {activeTab === 'inventory' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'fadeIn 0.4s ease' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
-              <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'flex-start', flex: 1 }}>
-                <Info size={18} color="#1d4ed8" style={{ marginTop: '0.15rem', flexShrink: 0 }} />
-                <p style={{ color: '#1e3a8a', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
-                  <strong>Modificación de Precios y Stock:</strong> Puede modificar múltiples calibres o productos en simultáneo y guardar uno por uno con su botón correspondiente, o presionar <strong>"Guardar Todos los Cambios"</strong> para guardar toda la tabla de una vez.
-                </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', animation: 'fadeIn 0.4s ease' }}>
+            
+            {/* Top Toolbar Container: Grouped Action Buttons + Full-Width Info Banner */}
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid var(--border-light)',
+              borderRadius: '12px',
+              padding: '1.25rem',
+              boxShadow: 'var(--shadow-sm)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem'
+            }}>
+              {/* Header Title + Action Buttons Row */}
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '1rem'
+              }}>
+                <div>
+                  <h3 style={{ margin: '0 0 0.25rem 0', fontSize: '1.05rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
+                    Control General de Inventario & Precios
+                  </h3>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-medium)' }}>
+                    Administre calibres, stock disponible y precios mayoristas oficiales de la tienda.
+                  </p>
+                </div>
+
+                {/* Right Action Buttons */}
+                <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <button
+                    type="button"
+                    onClick={() => setIsStockReportOpen(true)}
+                    style={{
+                      background: '#0f172a',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '0.65rem 1.15rem',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      boxShadow: 'var(--shadow-sm)',
+                      transition: 'var(--transition-fast)',
+                      fontFamily: 'inherit'
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = '#1e293b'}
+                    onMouseOut={e => e.currentTarget.style.background = '#0f172a'}
+                  >
+                    <FileText size={15} /> Reporte PDF (A4)
+                  </button>
+                  
+                  <button
+                    type="button"
+                    onClick={() => handleExportStockCSV(true)}
+                    style={{
+                      background: '#059669',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '0.65rem 1.15rem',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      boxShadow: 'var(--shadow-sm)',
+                      transition: 'var(--transition-fast)',
+                      fontFamily: 'inherit'
+                    }}
+                    onMouseOver={e => e.currentTarget.style.background = '#047857'}
+                    onMouseOut={e => e.currentTarget.style.background = '#059669'}
+                  >
+                    <Download size={15} /> Descargar Excel (.CSV)
+                  </button>
+
+                  <button
+                    onClick={handleSaveAllProducts}
+                    style={{
+                      background: savedFeedback['all'] ? 'var(--success)' : 'var(--primary-dark)',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '0.65rem 1.3rem',
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      boxShadow: 'var(--shadow-sm)',
+                      transition: 'var(--transition-fast)',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    {savedFeedback['all'] ? <Check size={15} /> : <Save size={15} />}
+                    {savedFeedback['all'] ? '¡Todo Guardado!' : 'Guardar Todos los Cambios'}
+                  </button>
+
+                  <button
+                    onClick={handleOpenAddPage}
+                    className="btn-primary"
+                    style={{
+                      padding: '0.65rem 1.3rem',
+                      fontSize: '0.82rem',
+                      fontWeight: 800,
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.4rem',
+                      boxShadow: 'var(--shadow-sm)',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <Plus size={15} /> Añadir Producto
+                  </button>
+                </div>
               </div>
-              <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => setIsStockReportOpen(true)}
-                  style={{
-                    background: '#0f172a',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '0.75rem 1.25rem',
-                    fontSize: '0.82rem',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    boxShadow: 'var(--shadow-sm)',
-                    transition: 'var(--transition-fast)',
-                    fontFamily: 'inherit'
-                  }}
-                  onMouseOver={e => e.currentTarget.style.background = '#1e293b'}
-                  onMouseOut={e => e.currentTarget.style.background = '#0f172a'}
-                >
-                  <FileText size={16} /> Reporte PDF (A4)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleExportStockCSV(true)}
-                  style={{
-                    background: '#059669',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '0.75rem 1.25rem',
-                    fontSize: '0.82rem',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    boxShadow: 'var(--shadow-sm)',
-                    transition: 'var(--transition-fast)',
-                    fontFamily: 'inherit'
-                  }}
-                  onMouseOver={e => e.currentTarget.style.background = '#047857'}
-                  onMouseOut={e => e.currentTarget.style.background = '#059669'}
-                >
-                  <Download size={16} /> Descargar Excel (.CSV)
-                </button>
-                <button
-                  onClick={handleSaveAllProducts}
-                  style={{
-                    background: savedFeedback['all'] ? 'var(--success)' : 'var(--primary-dark)',
-                    color: '#ffffff',
-                    border: 'none',
-                    borderRadius: '6px',
-                    padding: '0.75rem 1.4rem',
-                    fontSize: '0.82rem',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.4rem',
-                    boxShadow: 'var(--shadow-sm)',
-                    transition: 'var(--transition-fast)',
-                    fontFamily: 'inherit'
-                  }}
-                >
-                  {savedFeedback['all'] ? <Check size={16} /> : <Save size={16} />}
-                  {savedFeedback['all'] ? '¡Todo Guardado!' : 'Guardar Todos los Cambios'}
-                </button>
-                <button
-                  onClick={handleOpenAddPage}
-                  className="btn-primary"
-                  style={{ padding: '0.75rem 1.5rem', fontSize: '0.82rem', fontWeight: 800, flexShrink: 0, display: 'flex', alignItems: 'center', gap: '0.4rem' }}
-                >
-                  <Plus size={16} /> Añadir Producto
-                </button>
+
+              {/* Full-width informative banner */}
+              <div style={{
+                background: '#eff6ff',
+                border: '1px solid #bfdbfe',
+                borderRadius: '8px',
+                padding: '0.75rem 1.15rem',
+                display: 'flex',
+                gap: '0.6rem',
+                alignItems: 'center'
+              }}>
+                <Info size={18} color="#1d4ed8" style={{ flexShrink: 0 }} />
+                <p style={{ color: '#1e3a8a', fontSize: '0.82rem', margin: 0, lineHeight: 1.5 }}>
+                  <strong>Modificación Rápida de Precios y Stock:</strong> Puede modificar múltiples calibres o productos en simultáneo y guardar uno por uno con su botón correspondiente, o presionar <strong>"Guardar Todos los Cambios"</strong> para aplicar toda la tabla a la vez.
+                </p>
               </div>
             </div>
 
@@ -2291,6 +2523,931 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   </tbody>
                 </table>
               )}
+            </div>
+
+          </div>
+        )}
+
+        {/* ============================================================== */}
+        {/* TAB: MANUAL ORDER BUILDER (HOLDED ERP STYLE WITH CUSTOM PRICES) */}
+        {/* ============================================================== */}
+        {activeTab === 'manual-order' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', animation: 'fadeIn 0.4s ease' }}>
+            
+            {/* 1. Header Banner */}
+            <div style={{
+              background: '#ffffff',
+              border: '1px solid var(--border-light)',
+              borderRadius: '12px',
+              padding: '1.5rem',
+              boxShadow: 'var(--shadow-sm)',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              flexWrap: 'wrap',
+              gap: '1rem'
+            }}>
+              <div style={{ display: 'flex', gap: '0.85rem', alignItems: 'center' }}>
+                <div style={{
+                  width: '46px',
+                  height: '46px',
+                  borderRadius: '10px',
+                  background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0
+                }}>
+                  <Receipt size={24} />
+                </div>
+                <div>
+                  <h2 style={{ margin: '0 0 0.25rem 0', fontSize: '1.25rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
+                    Creador de Pedidos & Ventas B2B (Precios Personalizados)
+                  </h2>
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-medium)', lineHeight: 1.4 }}>
+                    Agregue productos, modifique libremente el precio unitario en la tabla para ventas con descuento especial o acuerdos comerciales, y procese la venta directo al inventario.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                {moItems.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleClearManualOrder}
+                    style={{
+                      background: '#fee2e2',
+                      color: '#b91c1c',
+                      border: 'none',
+                      borderRadius: '6px',
+                      padding: '0.55rem 1rem',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.35rem',
+                      fontFamily: 'inherit'
+                    }}
+                  >
+                    <Trash2 size={14} /> Limpiar Todo
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('orders')}
+                  style={{
+                    background: '#f1f5f9',
+                    color: 'var(--text-dark)',
+                    border: '1px solid #cbd5e1',
+                    borderRadius: '6px',
+                    padding: '0.55rem 1.1rem',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.35rem',
+                    fontFamily: 'inherit'
+                  }}
+                >
+                  <ClipboardList size={14} /> Ver Pedidos ({orders.length})
+                </button>
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {moError && (
+              <div style={{
+                background: '#fef2f2',
+                border: '1px solid #fca5a5',
+                borderRadius: '8px',
+                padding: '0.85rem 1.25rem',
+                color: '#991b1b',
+                fontSize: '0.85rem',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}>
+                <AlertCircle size={18} color="#dc2626" />
+                {moError}
+              </div>
+            )}
+
+            {/* Success Confirmation Card */}
+            {moCreatedOrder && (
+              <div style={{
+                background: 'linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%)',
+                border: '2px solid #86efac',
+                borderRadius: '12px',
+                padding: '1.5rem',
+                boxShadow: '0 4px 15px rgba(22, 163, 74, 0.12)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '1rem',
+                animation: 'fadeIn 0.3s ease'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '1rem' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{ width: '40px', height: '40px', borderRadius: '50%', background: '#16a34a', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <CheckCircle2 size={24} />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#166534' }}>
+                        ¡Pedido #{moCreatedOrder.id} Procesado y Registrado!
+                      </h3>
+                      <p style={{ margin: '0.15rem 0 0 0', fontSize: '0.85rem', color: '#15803d' }}>
+                        Cliente: <strong>{moCreatedOrder.fullName}</strong> • Total Venta: <strong>USD ${moCreatedOrder.total.toFixed(2)}</strong> • Estado: <strong>{moCreatedOrder.status}</strong>
+                      </p>
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const printWindow = window.open('', '_blank');
+                        if (!printWindow) return;
+                        const itemsRows = moCreatedOrder.items.map(item => `
+                          <tr>
+                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${item.productName} ${item.variantName ? `<span style="color: #64748b; font-size: 12px;">(${item.variantName})</span>` : ''}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.quantity}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">USD $${item.price.toFixed(2)}</td>
+                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">USD $${(item.price * item.quantity).toFixed(2)}</td>
+                          </tr>
+                        `).join('');
+
+                        printWindow.document.write(`
+                          <!DOCTYPE html>
+                          <html>
+                            <head>
+                              <title>Nota de Venta / Proforma - ${moCreatedOrder.id}</title>
+                              <style>
+                                body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #1e293b; }
+                                .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 25px; }
+                                .logo { font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
+                                .badge { background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+                                .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
+                                .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; font-size: 13px; line-height: 1.6; }
+                                table { width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 14px; }
+                                th { background: #0f172a; color: #ffffff; padding: 10px; text-align: left; font-size: 13px; }
+                                .total-box { text-align: right; font-size: 18px; font-weight: bold; padding: 15px; background: #f1f5f9; border-radius: 8px; color: #0f172a; }
+                                @media print { body { margin: 0; } }
+                              </style>
+                            </head>
+                            <body>
+                              <div class="header">
+                                <div>
+                                  <div class="logo">LATMEDICAL</div>
+                                  <div style="font-size: 12px; color: #64748b;">Dispositivos Médicos & Estética Avanzada</div>
+                                </div>
+                                <div style="text-align: right;">
+                                  <span class="badge">ORDEN DE VENTA #${moCreatedOrder.id}</span>
+                                  <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Fecha: ${moCreatedOrder.date}</div>
+                                </div>
+                              </div>
+                              <div class="meta">
+                                <div class="box">
+                                  <strong style="color: #0f172a; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Cliente / Profesional:</strong><br/>
+                                  <strong style="font-size: 15px;">${moCreatedOrder.fullName}</strong><br/>
+                                  ${moCreatedOrder.specialty} ${moCreatedOrder.licenseNumber ? `• Mat: ${moCreatedOrder.licenseNumber}` : ''}<br/>
+                                  Tel / WhatsApp: ${moCreatedOrder.phone}<br/>
+                                  ${moCreatedOrder.email ? `Email: ${moCreatedOrder.email}` : ''}
+                                </div>
+                                <div class="box">
+                                  <strong style="color: #0f172a; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Condiciones Comerciales:</strong><br/>
+                                  Método de Pago: <strong>${moCreatedOrder.paymentMethod}</strong><br/>
+                                  Estado: <strong>${moCreatedOrder.status}</strong><br/>
+                                  Entrega: ${moCreatedOrder.address}, ${moCreatedOrder.city} (${moCreatedOrder.province})
+                                </div>
+                              </div>
+                              <table>
+                                <thead>
+                                  <tr>
+                                    <th>Producto / Insumo</th>
+                                    <th style="text-align: center;">Cantidad</th>
+                                    <th style="text-align: right;">Precio Unitario</th>
+                                    <th style="text-align: right;">Total Línea</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  ${itemsRows}
+                                </tbody>
+                              </table>
+                              <div class="total-box">
+                                TOTAL A PAGAR: USD $${moCreatedOrder.total.toFixed(2)}
+                              </div>
+                              <div style="margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 15px; font-size: 11px; color: #64748b; text-align: center;">
+                                Documento no válido como factura fiscal. Comprobante de venta y despacho interno Latmedical.
+                              </div>
+                              <script>
+                                window.onload = function() { window.print(); }
+                              </script>
+                            </body>
+                          </html>
+                        `);
+                        printWindow.document.close();
+                      }}
+                      style={{
+                        background: '#0f172a',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '6px',
+                        padding: '0.65rem 1.1rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      <Printer size={15} /> Imprimir / PDF Proforma
+                    </button>
+
+                    {moCreatedOrder.phone && (
+                      <a
+                        href={`https://wa.me/${moCreatedOrder.phone.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(
+                          `*LATMEDICAL - DETALLE DE SU PEDIDO #${moCreatedOrder.id}*\n` +
+                          `Doctor/a: ${moCreatedOrder.fullName}\n` +
+                          `Fecha: ${moCreatedOrder.date}\n` +
+                          `----------------------------------------\n` +
+                          moCreatedOrder.items.map(i => `• ${i.quantity}x ${i.productName} ${i.variantName ? `(${i.variantName})` : ''} - USD $${(i.price * i.quantity).toFixed(2)}`).join('\n') +
+                          `\n----------------------------------------\n` +
+                          `*TOTAL: USD $${moCreatedOrder.total.toFixed(2)}*\n` +
+                          `Forma de Pago: ${moCreatedOrder.paymentMethod}\n` +
+                          `Estado: ${moCreatedOrder.status}\n\n` +
+                          `¡Muchas gracias por su compra!`
+                        )}`}
+                        target="_blank"
+                        rel="noreferrer"
+                        style={{
+                          background: '#16a34a',
+                          color: '#ffffff',
+                          textDecoration: 'none',
+                          borderRadius: '6px',
+                          padding: '0.65rem 1.1rem',
+                          fontSize: '0.82rem',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.4rem',
+                          fontFamily: 'inherit'
+                        }}
+                      >
+                        <Send size={15} /> Enviar por WhatsApp
+                      </a>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={handleClearManualOrder}
+                      style={{
+                        background: '#ffffff',
+                        color: '#166534',
+                        border: '1px solid #86efac',
+                        borderRadius: '6px',
+                        padding: '0.65rem 1.1rem',
+                        fontSize: '0.82rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      + Crear Otra Venta
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 2. Main Holded ERP Order Builder Grid */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
+              gap: '1.5rem',
+              alignItems: 'start'
+            }}>
+              
+              {/* LEFT COLUMN: Product Selector + Holded-style Editable Line Items Table */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                
+                {/* Product Search & Quick Add Box */}
+                <div style={{
+                  background: '#ffffff',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-dark)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                      <Search size={16} color="#2563eb" /> 1. Buscar y Agregar Insumos al Pedido
+                    </h3>
+                    <div style={{ display: 'flex', gap: '0.35rem' }}>
+                      {(['all', 'Vlift Pro', 'Seffiline'] as const).map(b => (
+                        <button
+                          key={b}
+                          type="button"
+                          onClick={() => setMoSelectedBrand(b)}
+                          style={{
+                            padding: '0.25rem 0.65rem',
+                            borderRadius: '15px',
+                            border: '1px solid',
+                            borderColor: moSelectedBrand === b ? '#2563eb' : '#cbd5e1',
+                            background: moSelectedBrand === b ? '#eff6ff' : '#ffffff',
+                            color: moSelectedBrand === b ? '#1d4ed8' : 'var(--text-medium)',
+                            fontSize: '0.75rem',
+                            fontWeight: moSelectedBrand === b ? 700 : 500,
+                            cursor: 'pointer',
+                            fontFamily: 'inherit'
+                          }}
+                        >
+                          {b === 'all' ? 'Todos' : b}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Search input */}
+                  <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                    <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nombre o calibre (ej: 19G, 30G, Mono, Cones, Genesis, Seffihair)..."
+                      value={moSearchQuery}
+                      onChange={e => setMoSearchQuery(e.target.value)}
+                      style={{
+                        width: '100%',
+                        height: '40px',
+                        padding: '0 0.75rem 0 2.4rem',
+                        borderRadius: '8px',
+                        border: '1.5px solid #cbd5e1',
+                        fontSize: '0.85rem',
+                        outline: 'none',
+                        fontFamily: 'inherit'
+                      }}
+                    />
+                  </div>
+
+                  {/* Quick Products Pick Grid */}
+                  <div style={{
+                    maxHeight: '260px',
+                    overflowY: 'auto',
+                    border: '1px solid #f1f5f9',
+                    borderRadius: '8px',
+                    padding: '0.5rem',
+                    background: '#f8fafc',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.4rem'
+                  }}>
+                    {products
+                      .filter(p => {
+                        const matchBrand = moSelectedBrand === 'all' || p.brand === moSelectedBrand;
+                        const matchSearch = p.name.toLowerCase().includes(moSearchQuery.toLowerCase()) ||
+                                            p.category.toLowerCase().includes(moSearchQuery.toLowerCase()) ||
+                                            p.brand.toLowerCase().includes(moSearchQuery.toLowerCase());
+                        return matchBrand && matchSearch;
+                      })
+                      .map(p => {
+                        const inv = inventory.find(i => i.productId === p.id);
+                        const hasVariants = inv && inv.hasVariants && inv.variants && inv.variants.length > 0;
+
+                        return (
+                          <div
+                            key={p.id}
+                            style={{
+                              background: '#ffffff',
+                              border: '1px solid #e2e8f0',
+                              borderRadius: '8px',
+                              padding: '0.65rem 0.85rem',
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center',
+                              flexWrap: 'wrap',
+                              gap: '0.5rem'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                              <img
+                                src={p.image}
+                                alt={p.name}
+                                style={{ width: '38px', height: '38px', objectFit: 'contain', borderRadius: '4px', background: '#fff', border: '1px solid #f1f5f9' }}
+                              />
+                              <div>
+                                <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--primary-dark)' }}>
+                                  {p.name}
+                                </div>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                  <span className="badge badge-dark" style={{ fontSize: '0.62rem', padding: '0.1rem 0.4rem' }}>{p.brand}</span>
+                                  <span>Precio Base: USD ${p.price.toFixed(2)}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Actions / Variants */}
+                            <div>
+                              {hasVariants ? (
+                                <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                                  {inv.variants.map(v => (
+                                    <button
+                                      key={v.id}
+                                      type="button"
+                                      onClick={() => handleAddProductToManualOrder(p, v)}
+                                      style={{
+                                        background: '#eff6ff',
+                                        border: '1px solid #bfdbfe',
+                                        borderRadius: '4px',
+                                        padding: '0.25rem 0.55rem',
+                                        fontSize: '0.72rem',
+                                        fontWeight: 700,
+                                        color: '#1d4ed8',
+                                        cursor: 'pointer',
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: '0.25rem',
+                                        fontFamily: 'inherit'
+                                      }}
+                                      title={`Agregar calibre ${v.name} (Stock: ${v.stock})`}
+                                    >
+                                      + {v.name}
+                                      <span style={{ fontSize: '0.65rem', color: v.stock > 0 ? '#16a34a' : '#dc2626' }}>
+                                        ({v.stock})
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => handleAddProductToManualOrder(p, undefined, inv?.stock || 0)}
+                                  style={{
+                                    background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    padding: '0.35rem 0.85rem',
+                                    fontSize: '0.75rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer',
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: '0.3rem',
+                                    fontFamily: 'inherit'
+                                  }}
+                                >
+                                  <Plus size={13} /> Agregar
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+
+                {/* Holded-Style Editable Order Lines Table */}
+                <div style={{
+                  background: '#ffffff',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <div style={{
+                    padding: '1rem 1.25rem',
+                    borderBottom: '1px solid var(--border-light)',
+                    background: '#f8fafc',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center'
+                  }}>
+                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
+                      2. Líneas de Venta (Precios Especiales Editables)
+                    </h3>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#2563eb', background: '#eff6ff', padding: '0.2rem 0.6rem', borderRadius: '12px' }}>
+                      {moItems.length} {moItems.length === 1 ? 'Producto' : 'Productos'} en Orden
+                    </span>
+                  </div>
+
+                  {moItems.length === 0 ? (
+                    <div style={{ padding: '3.5rem 2rem', textAlign: 'center', color: 'var(--text-medium)' }}>
+                      <ShoppingCart size={40} style={{ opacity: 0.3, marginBottom: '0.75rem' }} />
+                      <p style={{ margin: '0 0 0.3rem 0', fontWeight: 700, fontSize: '0.95rem' }}>No hay productos cargados en esta venta</p>
+                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-light)' }}>
+                        Utilice el buscador superior para añadir calibres de hilos o kits Seffiline a la orden.
+                      </p>
+                    </div>
+                  ) : (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+                        <thead>
+                          <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-light)', color: 'var(--text-medium)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                            <th style={{ padding: '0.75rem 1rem' }}>Producto / Medida</th>
+                            <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>Stock</th>
+                            <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', width: '90px' }}>Cantidad</th>
+                            <th style={{ padding: '0.75rem 0.75rem', textAlign: 'right' }}>Precio Lista</th>
+                            <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', width: '130px' }}>
+                              <span style={{ color: '#ea580c', fontWeight: 800 }}>Precio Especial (USD)</span>
+                            </th>
+                            <th style={{ padding: '0.75rem 0.75rem', textAlign: 'right' }}>Subtotal</th>
+                            <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', width: '50px' }}></th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {moItems.map((item, idx) => {
+                            const lineTotal = item.price * item.quantity;
+                            const isDiscounted = item.price < item.regularPrice;
+
+                            return (
+                              <tr key={item.lineId} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                                {/* Product info */}
+                                <td style={{ padding: '0.75rem 1rem' }}>
+                                  <div style={{ fontWeight: 700, color: 'var(--primary-dark)' }}>
+                                    {item.productName}
+                                  </div>
+                                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.15rem' }}>
+                                    <span style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#f1f5f9', color: 'var(--text-medium)', fontWeight: 600 }}>
+                                      {item.brand}
+                                    </span>
+                                    {item.variantName && (
+                                      <span style={{ fontSize: '0.72rem', color: '#0369a1', fontWeight: 700, background: '#e0f2fe', padding: '0.1rem 0.45rem', borderRadius: '4px' }}>
+                                        {item.variantName}
+                                      </span>
+                                    )}
+                                  </div>
+                                </td>
+
+                                {/* Stock available */}
+                                <td style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>
+                                  <span style={{
+                                    fontSize: '0.72rem',
+                                    fontWeight: 700,
+                                    color: item.stock > 0 ? '#16a34a' : '#dc2626',
+                                    background: item.stock > 0 ? '#dcfce7' : '#fee2e2',
+                                    padding: '0.2rem 0.5rem',
+                                    borderRadius: '12px',
+                                    whiteSpace: 'nowrap'
+                                  }}>
+                                    {item.stock > 0 ? `${item.stock} disp.` : 'Agotado'}
+                                  </span>
+                                </td>
+
+                                {/* Quantity Input */}
+                                <td style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>
+                                  <input
+                                    type="number"
+                                    min="1"
+                                    value={item.quantity}
+                                    onChange={e => handleUpdateManualOrderLine(item.lineId, 'quantity', parseInt(e.target.value, 10))}
+                                    style={{
+                                      width: '65px',
+                                      height: '32px',
+                                      textAlign: 'center',
+                                      borderRadius: '6px',
+                                      border: '1.5px solid #cbd5e1',
+                                      fontWeight: 800,
+                                      outline: 'none',
+                                      fontFamily: 'inherit'
+                                    }}
+                                  />
+                                </td>
+
+                                {/* Regular price */}
+                                <td style={{ padding: '0.75rem 0.75rem', textAlign: 'right', color: 'var(--text-light)', textDecoration: isDiscounted ? 'line-through' : 'none' }}>
+                                  USD ${item.regularPrice.toFixed(2)}
+                                </td>
+
+                                {/* EDITABLE PRICE (HOLDED STYLE) */}
+                                <td style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>
+                                  <div style={{ position: 'relative', display: 'inline-block' }}>
+                                    <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', fontWeight: 800, color: '#ea580c' }}>$</span>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={item.price}
+                                      onChange={e => handleUpdateManualOrderLine(item.lineId, 'price', parseFloat(e.target.value))}
+                                      title="Modificar precio unitario para este cliente"
+                                      style={{
+                                        width: '95px',
+                                        height: '32px',
+                                        padding: '0 0.4rem 0 1.2rem',
+                                        textAlign: 'right',
+                                        borderRadius: '6px',
+                                        border: '2px solid #fdba74',
+                                        background: '#fff7ed',
+                                        fontWeight: 800,
+                                        color: '#c2410c',
+                                        fontSize: '0.85rem',
+                                        outline: 'none',
+                                        fontFamily: 'inherit'
+                                      }}
+                                    />
+                                  </div>
+                                </td>
+
+                                {/* Line Subtotal */}
+                                <td style={{ padding: '0.75rem 0.75rem', textAlign: 'right', fontWeight: 800, color: 'var(--primary-dark)', fontSize: '0.88rem' }}>
+                                  USD ${lineTotal.toFixed(2)}
+                                </td>
+
+                                {/* Delete button */}
+                                <td style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveManualOrderLine(item.lineId)}
+                                    style={{
+                                      background: 'none',
+                                      border: 'none',
+                                      color: '#dc2626',
+                                      cursor: 'pointer',
+                                      padding: '0.25rem',
+                                      borderRadius: '4px'
+                                    }}
+                                    title="Quitar línea"
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+              {/* RIGHT COLUMN: Customer Information + Order Summary */}
+              <form onSubmit={handleProcessManualOrder} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                
+                {/* Customer Details Box */}
+                <div style={{
+                  background: '#ffffff',
+                  border: '1px solid var(--border-light)',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
+                  boxShadow: 'var(--shadow-sm)'
+                }}>
+                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-dark)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    <User size={16} color="#2563eb" /> 3. Datos del Médico / Clínica
+                  </h3>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.3rem' }}>
+                        Nombre del Médico o Razón Social *
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Dr. Martín Benítez / Clínica Estética"
+                        value={moCustomerName}
+                        onChange={e => setMoCustomerName(e.target.value)}
+                        required
+                        style={{ width: '100%', height: '36px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.3rem' }}>
+                          Teléfono / WhatsApp *
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: 11 4455-6677"
+                          value={moCustomerPhone}
+                          onChange={e => setMoCustomerPhone(e.target.value)}
+                          required
+                          style={{ width: '100%', height: '36px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.3rem' }}>
+                          Email (Opcional)
+                        </label>
+                        <input
+                          type="email"
+                          placeholder="doctor@clinica.com"
+                          value={moCustomerEmail}
+                          onChange={e => setMoCustomerEmail(e.target.value)}
+                          style={{ width: '100%', height: '36px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.3rem' }}>
+                          Especialidad
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: Cirugía Plástica / Dermato"
+                          value={moCustomerSpecialty}
+                          onChange={e => setMoCustomerSpecialty(e.target.value)}
+                          style={{ width: '100%', height: '36px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit' }}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.3rem' }}>
+                          Matrícula Médica
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Ej: MN 145.890"
+                          value={moCustomerLicense}
+                          onChange={e => setMoCustomerLicense(e.target.value)}
+                          style={{ width: '100%', height: '36px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.3rem' }}>
+                        Dirección de Envío / Entrega
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Ej: Av. Santa Fe 3200, Piso 4 B"
+                        value={moCustomerAddress}
+                        onChange={e => setMoCustomerAddress(e.target.value)}
+                        style={{ width: '100%', height: '36px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit' }}
+                      />
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.6rem' }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.3rem' }}>
+                          Método de Pago
+                        </label>
+                        <select
+                          value={moPaymentMethod}
+                          onChange={e => setMoPaymentMethod(e.target.value)}
+                          style={{ width: '100%', height: '36px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit', background: '#fff' }}
+                        >
+                          <option value="Transferencia Bancaria">Transferencia Bancaria</option>
+                          <option value="Efectivo Contra-entrega">Efectivo Contra-entrega</option>
+                          <option value="Tarjeta de Crédito / Débito">Tarjeta de Crédito / Débito</option>
+                          <option value="Cuenta Corriente B2B">Cuenta Corriente B2B</option>
+                          <option value="Dólar Billete">Dólar Billete</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.3rem' }}>
+                          Estado Inicial
+                        </label>
+                        <select
+                          value={moOrderStatus}
+                          onChange={e => setMoOrderStatus(e.target.value as Order['status'])}
+                          style={{ width: '100%', height: '36px', padding: '0 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit', background: '#fff' }}
+                        >
+                          <option value="Aprobado">Aprobado (Venta Firme)</option>
+                          <option value="Pendiente">Pendiente de Pago</option>
+                          <option value="Despachado">Despachado</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-medium)', marginBottom: '0.3rem' }}>
+                        Observaciones / Notas Internas del Pedido
+                      </label>
+                      <textarea
+                        placeholder="Ej: Precio especial acordado por volumen mensual. Despacho urgente."
+                        value={moOrderNotes}
+                        onChange={e => setMoOrderNotes(e.target.value)}
+                        rows={2}
+                        style={{ width: '100%', padding: '0.5rem 0.6rem', borderRadius: '6px', border: '1px solid #cbd5e1', fontSize: '0.82rem', outline: 'none', fontFamily: 'inherit', resize: 'vertical' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Financial Summary & Process Button */}
+                <div style={{
+                  background: '#ffffff',
+                  border: '1.5px solid #bfdbfe',
+                  borderRadius: '12px',
+                  padding: '1.25rem',
+                  boxShadow: 'var(--shadow-sm)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.85rem'
+                }}>
+                  <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
+                    4. Resumen y Cierre de Venta
+                  </h3>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--text-medium)' }}>
+                    <span>Cajas / Unidades Totales:</span>
+                    <strong>{moTotalUnits} unidades</strong>
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--text-medium)' }}>
+                    <span>Subtotal Productos:</span>
+                    <span>USD ${moSubtotalUSD.toFixed(2)}</span>
+                  </div>
+
+                  {/* Global Discount input */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.82rem', color: 'var(--text-medium)' }}>
+                    <span>Descuento Global Adicional (USD):</span>
+                    <div style={{ position: 'relative', width: '90px' }}>
+                      <span style={{ position: 'absolute', left: '6px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', color: '#16a34a', fontWeight: 800 }}>$</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={moGlobalDiscountUSD}
+                        onChange={e => setMoGlobalDiscountUSD(e.target.value)}
+                        style={{
+                          width: '100%',
+                          height: '28px',
+                          padding: '0 0.3rem 0 1rem',
+                          textAlign: 'right',
+                          borderRadius: '4px',
+                          border: '1px solid #cbd5e1',
+                          fontSize: '0.8rem',
+                          fontWeight: 700,
+                          outline: 'none',
+                          fontFamily: 'inherit'
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div style={{
+                    borderTop: '2px solid #e2e8f0',
+                    paddingTop: '0.75rem',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'baseline'
+                  }}>
+                    <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary-dark)' }}>
+                      TOTAL A FACTURAR:
+                    </span>
+                    <span style={{ fontWeight: 800, fontSize: '1.35rem', color: '#2563eb' }}>
+                      USD ${moTotalUSD.toFixed(2)}
+                    </span>
+                  </div>
+
+                  {/* Stock decrement toggle */}
+                  <label style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.75rem',
+                    color: 'var(--text-medium)',
+                    cursor: 'pointer',
+                    background: '#f8fafc',
+                    padding: '0.5rem',
+                    borderRadius: '6px',
+                    border: '1px solid #e2e8f0'
+                  }}>
+                    <input
+                      type="checkbox"
+                      checked={moDecrementStock}
+                      onChange={e => setMoDecrementStock(e.target.checked)}
+                      style={{ cursor: 'pointer' }}
+                    />
+                    <span>Descontar stock automáticamente del inventario</span>
+                  </label>
+
+                  {/* Process button */}
+                  <button
+                    type="submit"
+                    disabled={moItems.length === 0}
+                    style={{
+                      background: moItems.length > 0 ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : '#94a3b8',
+                      color: '#ffffff',
+                      border: 'none',
+                      borderRadius: '8px',
+                      padding: '0.85rem 1.5rem',
+                      fontWeight: 800,
+                      fontSize: '0.92rem',
+                      cursor: moItems.length > 0 ? 'pointer' : 'not-allowed',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem',
+                      boxShadow: moItems.length > 0 ? '0 4px 14px rgba(37, 99, 235, 0.3)' : 'none',
+                      transition: 'all 0.2s ease',
+                      fontFamily: 'inherit',
+                      marginTop: '0.5rem'
+                    }}
+                  >
+                    <Receipt size={18} /> Procesar y Guardar Pedido ({moTotalUnits})
+                  </button>
+                </div>
+
+              </form>
             </div>
 
           </div>
