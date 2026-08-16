@@ -1474,8 +1474,10 @@ const App: React.FC = () => {
             )}
           </main>
 
-          {/* Global Footer */}
-          <Footer setActiveTab={handleSetActiveTab} />
+          {/* Global Footer - Omitted in admin view for full-height WordPress dashboard */}
+          {activeTab !== 'admin' && (
+            <Footer setActiveTab={handleSetActiveTab} />
+          )}
 
           {/* Sliding Cart Drawer overlay */}
           <Cart isOpen={cartOpen} toggleCart={toggleCart} />
@@ -1549,37 +1551,39 @@ const App: React.FC = () => {
           )}
         </div>
 
-        {/* Floating WhatsApp Button Container */}
-        <div className="whatsapp-container">
-          {/* Tooltip Message */}
-          <div className="whatsapp-tooltip">
-            ¿Tienes dudas? ¡Escríbenos!
-          </div>
+        {/* Floating WhatsApp Button Container - Omitted in admin view */}
+        {activeTab !== 'admin' && (
+          <div className="whatsapp-container">
+            {/* Tooltip Message */}
+            <div className="whatsapp-tooltip">
+              ¿Tienes dudas? ¡Escríbenos!
+            </div>
 
-          {/* Floating WhatsApp Button */}
-          <a
-            href="https://wa.me/5491154577210?text=Hola%20Latmedical%2C%20deseo%20realizar%20una%20consulta%20comercial%20B2B."
-            target="_blank"
-            rel="noopener noreferrer"
-            className="whatsapp-button"
-            title="Contactar Asesor WhatsApp"
-            onClick={() => {
-              (window as any).gtag?.('event', 'click_whatsapp_floating', {
-                'event_category': 'Contact',
-                'event_label': 'Floating Button'
-              });
-            }}
-          >
-            <svg 
-              viewBox="0 0 24 24" 
-              width="32" 
-              height="32" 
-              fill="#FFFFFF"
+            {/* Floating WhatsApp Button */}
+            <a
+              href="https://wa.me/5491154577210?text=Hola%20Latmedical%2C%20deseo%20realizar%20una%20consulta%20comercial%20B2B."
+              target="_blank"
+              rel="noopener noreferrer"
+              className="whatsapp-button"
+              title="Contactar Asesor WhatsApp"
+              onClick={() => {
+                (window as any).gtag?.('event', 'click_whatsapp_floating', {
+                  'event_category': 'Contact',
+                  'event_label': 'Floating Button'
+                });
+              }}
             >
-              <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.747 1.451 5.436.002 9.861-4.422 9.864-9.865.003-2.637-1.022-5.116-2.887-6.983-1.866-1.868-4.349-2.897-6.989-2.899-5.443 0-9.87 4.423-9.873 9.867-.001 1.704.455 3.364 1.322 4.825L1.888 22.09l4.759-1.936zM17.487 14.39c-.3-.15-1.782-.88-2.057-.98-.275-.1-.475-.15-.675.15-.2.3-.775.98-.95 1.18-.175.2-.35.225-.65.075-.3-.15-1.267-.467-2.413-1.49-1.127-1.006-1.888-2.25-2.11-2.625-.222-.375-.025-.578.125-.727.135-.135.3-.35.45-.525.15-.175.2-.3.3-.5s.05-.375-.025-.525C9.444 8.71 8.8 7.15 8.525 6.49c-.268-.646-.54-.558-.75-.569-.175-.008-.375-.01-.575-.01-.2 0-.525.075-.8 1.075-.275 1.08-.75 2.1-.825 2.25-.075.15-.15.3.35.775 2.5 2.375 5.25 2.3 5.75 2.3.5 0 .825-.325 1.075-.625.25-.3.725-.975.8-1.075.075-.1.15-.3.45-.15z" />
-            </svg>
-          </a>
-        </div>
+              <svg 
+                viewBox="0 0 24 24" 
+                width="32" 
+                height="32" 
+                fill="#FFFFFF"
+              >
+                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.458L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.747 1.451 5.436.002 9.861-4.422 9.864-9.865.003-2.637-1.022-5.116-2.887-6.983-1.866-1.868-4.349-2.897-6.989-2.899-5.443 0-9.87 4.423-9.873 9.867-.001 1.704.455 3.364 1.322 4.825L1.888 22.09l4.759-1.936zM17.487 14.39c-.3-.15-1.782-.88-2.057-.98-.275-.1-.475-.15-.675.15-.2.3-.775.98-.95 1.18-.175.2-.35.225-.65.075-.3-.15-1.267-.467-2.413-1.49-1.127-1.006-1.888-2.25-2.11-2.625-.222-.375-.025-.578.125-.727.135-.135.3-.35.45-.525.15-.175.2-.3.3-.5s.05-.375-.025-.525C9.444 8.71 8.8 7.15 8.525 6.49c-.268-.646-.54-.558-.75-.569-.175-.008-.375-.01-.575-.01-.2 0-.525.075-.8 1.075-.275 1.08-.75 2.1-.825 2.25-.075.15-.15.3.35.775 2.5 2.375 5.25 2.3 5.75 2.3.5 0 .825-.325 1.075-.625.25-.3.725-.975.8-1.075.075-.1.15-.3.45-.15z" />
+              </svg>
+            </a>
+          </div>
+        )}
 
         <style>{`
           @media (min-width: 992px) {
