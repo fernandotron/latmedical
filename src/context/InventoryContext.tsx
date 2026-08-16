@@ -393,6 +393,67 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     );
   };
 
+  const reconcileStockDifference = (oldItems: OrderItem[], newItems: OrderItem[]) => {
+    // 1. Reconcile regular inventory differentially (only touch deltas)
+    setInventory((prevInv) =>
+      prevInv.map((invItem) => {
+        const oldMatching = oldItems.filter((oi) => !oi.isClearance && isMatchProduct(invItem.productId, oi));
+        const newMatching = newItems.filter((oi) => !oi.isClearance && isMatchProduct(invItem.productId, oi));
+
+        if (oldMatching.length === 0 && newMatching.length === 0) return invItem;
+
+        if (invItem.hasVariants && invItem.variants && invItem.variants.length > 0) {
+          return {
+            ...invItem,
+            variants: invItem.variants.map((v) => {
+              const oldQty = oldMatching
+                .filter((oi) => isMatchVariant(v.name, oi.variantName))
+                .reduce((sum, oi) => sum + (oi.quantity || 0), 0);
+              const newQty = newMatching
+                .filter((oi) => isMatchVariant(v.name, oi.variantName))
+                .reduce((sum, oi) => sum + (oi.quantity || 0), 0);
+              
+              const diff = newQty - oldQty; // +delta => deduct more; -delta => restore stock
+              if (diff === 0) return v;
+
+              return {
+                ...v,
+                stock: Math.max(0, v.stock - diff)
+              };
+            })
+          };
+        } else {
+          const oldQty = oldMatching.reduce((sum, oi) => sum + (oi.quantity || 0), 0);
+          const newQty = newMatching.reduce((sum, oi) => sum + (oi.quantity || 0), 0);
+          const diff = newQty - oldQty;
+          if (diff === 0) return invItem;
+
+          return { ...invItem, stock: Math.max(0, invItem.stock - diff) };
+        }
+      })
+    );
+
+    // 2. Reconcile clearance inventory differentially
+    setClearanceOffers((prevClr) =>
+      prevClr.map((clr) => {
+        const oldMatching = oldItems.filter((oi) => oi.isClearance && (oi.clearanceId === clr.id || (oi.productName && clr.productName && oi.productName.toLowerCase() === clr.productName.toLowerCase())));
+        const newMatching = newItems.filter((oi) => oi.isClearance && (oi.clearanceId === clr.id || (oi.productName && clr.productName && oi.productName.toLowerCase() === clr.productName.toLowerCase())));
+
+        if (oldMatching.length === 0 && newMatching.length === 0) return clr;
+
+        const oldQty = oldMatching.reduce((sum, oi) => sum + (oi.quantity || 0), 0);
+        const newQty = newMatching.reduce((sum, oi) => sum + (oi.quantity || 0), 0);
+        const diff = newQty - oldQty;
+        if (diff === 0) return clr;
+
+        return {
+          ...clr,
+          stock: Math.max(0, clr.stock - diff)
+        };
+      })
+    );
+  };
+
   const addOrder = (orderData: Omit<Order, 'id' | 'date' | 'status'> & { status?: Order['status'] }) => {
     const newId = `LM-${Math.floor(100000 + Math.random() * 900000)}`;
     const deletedIds = getDeletedOrderIds();
@@ -446,10 +507,9 @@ export const InventoryProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   const updateOrder = (orderId: string, updatedData: Partial<Order>) => {
     setOrders((prevOrders) => {
       const existingOrder = prevOrders.find((o) => o.id === orderId);
-      if (existingOrder && updatedData.items && existingOrder.stockDecremented) {
-        // Reconcile stock: restore previous items and deduct new items
-        incrementStockForOrder(existingOrder.items);
-        decrementStockForOrder(updatedData.items);
+      if (existingOrder && updatedData.items && (existingOrder.stockDecremented ?? true) && existingOrder.status !== 'Cancelado' && updatedData.status !== 'Cancelado') {
+        // Differential reconciliation: only newly added items or increased quantities are deducted
+        reconcileStockDifference(existingOrder.items, updatedData.items);
       }
       return prevOrders.map((o) => {
         if (o.id !== orderId) return o;

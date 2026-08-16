@@ -534,13 +534,15 @@ const App: React.FC = () => {
         )}
 
         <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-          {/* Global Navigation Header */}
-          <Header 
-            activeTab={activeTab} 
-            setActiveTab={handleSetActiveTab} 
-            toggleCart={toggleCart} 
-            isAdminLoggedIn={isAdminLoggedIn}
-          />
+          {/* Global Navigation Header - Omitted in admin view for full-height WordPress dashboard */}
+          {activeTab !== 'admin' && (
+            <Header 
+              activeTab={activeTab} 
+              setActiveTab={handleSetActiveTab} 
+              toggleCart={toggleCart} 
+              isAdminLoggedIn={isAdminLoggedIn}
+            />
+          )}
 
           {/* Dynamic Main Body Content */}
           <main style={{ flexGrow: 1, marginTop: isAdminLoggedIn ? '32px' : '0px' }}>

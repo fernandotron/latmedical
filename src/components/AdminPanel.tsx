@@ -798,6 +798,244 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
     onAdminLoginChange(false);
   };
 
+  const handlePrintOrderInvoice = (order: Order) => {
+    const existingIframe = document.getElementById('latmedical-order-print-frame');
+    if (existingIframe) existingIframe.remove();
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'latmedical-order-print-frame';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.visibility = 'hidden';
+    document.body.appendChild(iframe);
+
+    const logoFullUrl = window.location.origin + '/logo-full.png';
+
+    const itemsRows = order.items.map((item, idx) => {
+      const lineTotal = item.price * item.quantity;
+      return `
+        <tr style="border-bottom: 1px solid #e2e8f0; background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
+          <td style="padding: 9px 12px; font-weight: 600; color: #0f172a;">
+            ${item.productName}
+            ${item.variantName ? `<span style="color: #0369a1; font-weight: 600; font-size: 11px; margin-left: 6px;">(${item.variantName})</span>` : ''}
+            ${item.batchNumber ? `<div style="font-size: 10px; color: #ea580c; font-weight: 700;">Lote: ${item.batchNumber} • Vence: ${item.expiryDate || 'N/A'}</div>` : ''}
+          </td>
+          <td style="padding: 9px 12px; text-align: center; font-weight: 800; color: #0f172a;">${item.quantity}</td>
+          <td style="padding: 9px 12px; text-align: right; color: #475569;">USD $${item.price.toFixed(2)}</td>
+          <td style="padding: 9px 12px; text-align: right; font-weight: 800; color: #0f172a;">USD $${lineTotal.toFixed(2)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    const currentRate = (settings && settings.exchangeRate) ? Number(settings.exchangeRate) : 1380;
+    const totalARS = Math.round(order.total * currentRate);
+
+    const iframeDoc = iframe.contentWindow?.document;
+    if (!iframeDoc) return;
+
+    iframeDoc.open();
+    iframeDoc.write(`
+      <!DOCTYPE html>
+      <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <title>Comprobante_Pedido_${order.id}</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 12mm 12mm 14mm 12mm;
+            }
+            * {
+              box-sizing: border-box;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            body {
+              font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              color: #1e293b;
+              margin: 0;
+              padding: 0;
+              font-size: 9pt;
+              line-height: 1.4;
+            }
+            .header {
+              display: flex;
+              justify-content: space-between;
+              align-items: flex-start;
+              border-bottom: 2px solid #0f172a;
+              padding-bottom: 14px;
+              margin-bottom: 16px;
+            }
+            .badge-order {
+              display: inline-block;
+              background: #0f172a;
+              color: #ffffff;
+              padding: 4px 10px;
+              border-radius: 4px;
+              font-size: 8pt;
+              font-weight: 800;
+              text-transform: uppercase;
+              letter-spacing: 0.05em;
+            }
+            .badge-status {
+              display: inline-block;
+              padding: 3px 8px;
+              border-radius: 4px;
+              font-size: 8pt;
+              font-weight: 700;
+              background: #dcfce7;
+              color: #15803d;
+              margin-top: 4px;
+            }
+            .grid-meta {
+              display: grid;
+              grid-template-columns: 1.2fr 1fr;
+              gap: 12px;
+              margin-bottom: 16px;
+            }
+            .meta-card {
+              background: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 6px;
+              padding: 10px 12px;
+              font-size: 8.5pt;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-bottom: 16px;
+              font-size: 8.5pt;
+              page-break-inside: auto;
+            }
+            thead {
+              display: table-header-group;
+            }
+            tbody {
+              display: table-row-group;
+            }
+            tr {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            th {
+              background: #0f172a;
+              color: #ffffff;
+              padding: 7px 12px;
+              font-weight: 700;
+              font-size: 8pt;
+              text-transform: uppercase;
+              letter-spacing: 0.03em;
+            }
+            .totals-box {
+              background: #f8fafc;
+              border: 1.5px solid #0f172a;
+              border-radius: 6px;
+              padding: 12px 16px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 16px;
+            }
+            .avoid-break {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header avoid-break">
+            <div>
+              <img src="${logoFullUrl}" alt="Latmedical International" style="height: 42px; margin-bottom: 4px; display: block;" />
+              <div style="font-size: 8pt; color: #64748b; font-weight: 600;">Latmedical International S.A. • CUIT: 30-71689241-9</div>
+              <div style="font-size: 7.5pt; color: #94a3b8;">Distribución Oficial V-Lift Pro & Seffiline • Registro ANMAT PM 1234-56</div>
+            </div>
+            <div style="text-align: right;">
+              <span class="badge-order">Orden de Venta B2B</span>
+              <div style="font-size: 14pt; font-weight: 800; color: #0f172a; margin-top: 3px;">#${order.id}</div>
+              <div style="font-size: 7.5pt; color: #64748b;">Fecha: ${order.date}</div>
+              <span class="badge-status">Estado: ${order.status}</span>
+            </div>
+          </div>
+
+          <div class="grid-meta avoid-break">
+            <div class="meta-card">
+              <strong style="color: #0f172a; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">Datos del Comprador / Clínica:</strong>
+              <div style="font-size: 10pt; font-weight: 800; color: #0f172a;">${order.fullName}</div>
+              <div style="color: #475569; font-weight: 600;">${order.specialty || 'Profesional Médico'} ${order.licenseNumber ? `• M.N. / M.P.: ${order.licenseNumber}` : ''}</div>
+              <div style="color: #64748b; margin-top: 3px;">Tel / WhatsApp: <strong>${order.phone}</strong></div>
+              ${order.email ? `<div style="color: #64748b;">Email: ${order.email}</div>` : ''}
+            </div>
+            <div class="meta-card">
+              <strong style="color: #0f172a; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">Condiciones de Despacho & Pago:</strong>
+              <div>Método de Pago: <strong style="color: #0369a1;">${order.paymentMethod}</strong></div>
+              <div style="margin-top: 3px;">Destino: <strong>${order.address || 'Despacho a convenir'}</strong></div>
+              <div>Localidad: <strong>${order.city || 'CABA'}, ${order.province || 'Buenos Aires'}</strong></div>
+              <div style="color: #059669; font-weight: 600; font-size: 7.5pt; margin-top: 3px;">Cadena de Esterilidad y Trazabilidad Garantizada</div>
+            </div>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th style="text-align: left;">Insumo / Dispositivo Médico</th>
+                <th style="text-align: center; width: 70px;">Cant.</th>
+                <th style="text-align: right; width: 110px;">Precio Unit.</th>
+                <th style="text-align: right; width: 120px;">Total (USD)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsRows}
+            </tbody>
+          </table>
+
+          <div class="totals-box avoid-break">
+            <div>
+              <span style="font-size: 8pt; color: #64748b; display: block; font-weight: 600;">EQUIVALENTE MONEDA NACIONAL</span>
+              <span style="font-size: 11pt; font-weight: 800; color: #0369a1;">$ ${totalARS.toLocaleString('es-AR')} ARS</span>
+            </div>
+            <div style="text-align: right;">
+              <span style="font-size: 8pt; color: #64748b; display: block; font-weight: 600;">TOTAL GENERAL A FACTURAR</span>
+              <span style="font-size: 15pt; font-weight: 800; color: #0f172a;">USD $${order.total.toFixed(2)}</span>
+            </div>
+          </div>
+
+          <div class="avoid-break" style="border-top: 1px solid #cbd5e1; padding-top: 12px; display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; align-items: flex-end;">
+            <div style="font-size: 7pt; color: #64748b; line-height: 1.4;">
+              <strong>Comprobante B2B Oficial Latmedical International S.A.</strong><br/>
+              Todos los insumos provistos cuentan con aprobación ANMAT y certificado ISO 13485. Conservar el número de lote para trazabilidad clínica del paciente.
+            </div>
+            <div style="text-align: center;">
+              <div style="border-top: 1px dashed #94a3b8; width: 85%; margin: 0 auto 4px auto;"></div>
+              <div style="font-size: 7.5pt; font-weight: 700; color: #0f172a;">Despacho & Auditoría Comercial</div>
+              <div style="font-size: 7pt; color: #64748b;">Latmedical International S.A.</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `);
+    iframeDoc.close();
+
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e) {
+        console.error('Error printing order invoice:', e);
+      } finally {
+        setTimeout(() => {
+          if (document.body.contains(iframe)) iframe.remove();
+        }, 3000);
+      }
+    }, 300);
+  };
+
   const handleValChange = (key: string, field: 'stock' | 'price', val: string) => {
     const parsedVal = parseFloat(val);
     const prev = editState[key] || { stock: 0, price: 0 };
@@ -1307,9 +1545,9 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
   if (!isAdminLoggedIn) {
     return (
       <div style={{
-        padding: 'calc(var(--header-height) + 4rem) 0 8rem 0',
-        background: 'linear-gradient(135deg, #f5f7fa 0%, #e4e8f0 100%)',
-        minHeight: '100vh',
+        padding: '3rem 1.5rem 6rem 1.5rem',
+        background: '#f0f0f1',
+        minHeight: 'calc(100vh - 32px)',
         boxSizing: 'border-box',
         display: 'flex',
         alignItems: 'center',
@@ -1432,96 +1670,98 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
 
   // ── RENDER AUTHENTICATED ADMIN PANEL ──
   return (
-    <div style={{ padding: 'calc(var(--header-height) + 1.5rem) 0 6rem 0', animation: 'fadeIn 0.5s ease', background: '#f8fafc', minHeight: '100vh' }}>
-      <div className="container" style={{ maxWidth: '1600px', width: '100%', padding: '0 1.25rem' }}>
+    <div className="wp-admin-root" style={{ minHeight: 'calc(100vh - 32px)', background: '#f0f0f1', display: 'flex', animation: 'fadeIn 0.3s ease' }}>
+      
+      {/* WordPress 2026 Admin Dashboard Layout */}
+      <div className="admin-layout" style={{ display: 'flex', width: '100%', alignItems: 'stretch' }}>
         
-        {/* Holded-Style 2-Column Dashboard Layout */}
-        <div className="admin-layout" style={{ display: 'flex', gap: '1.75rem', alignItems: 'flex-start' }}>
+        {/* ============================================================== */}
+        {/* LEFT SIDEBAR (WORDPRESS 2026 ADMIN SLATE) */}
+        {/* ============================================================== */}
+        <aside className="admin-sidebar" style={{
+          width: '260px',
+          minWidth: '260px',
+          flexShrink: 0,
+          background: '#1d2327',
+          color: '#f0f0f1',
+          borderRight: '1px solid #2c3338',
+          position: 'sticky',
+          top: '32px',
+          height: 'calc(100vh - 32px)',
+          maxHeight: 'calc(100vh - 32px)',
+          overflowY: 'auto',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'space-between',
+          padding: '1.25rem 0',
+          boxSizing: 'border-box',
+          zIndex: 100
+        }}>
           
-          {/* ============================================================== */}
-          {/* LEFT SIDEBAR (HOLDED ERP STYLE) */}
-          {/* ============================================================== */}
-          <aside className="admin-sidebar" style={{
-            width: '280px',
-            flexShrink: 0,
-            background: '#ffffff',
-            border: '1px solid var(--border-light)',
-            borderRadius: '16px',
-            padding: '1.5rem 1.25rem',
-            boxShadow: '0 4px 20px -2px rgba(15, 23, 42, 0.05)',
-            position: 'sticky',
-            top: 'calc(var(--header-height) + 1.5rem)',
-            maxHeight: 'calc(100vh - var(--header-height) - 3rem)',
-            overflowY: 'auto',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '1.5rem'
-          }}>
-            
+          <div>
             {/* Sidebar Brand Header */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', paddingBottom: '1.25rem', borderBottom: '1px solid #f1f5f9' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0 1.25rem 1.25rem 1.25rem', borderBottom: '1px solid #2c3338' }}>
               <div style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, var(--primary-dark) 0%, #0f172a 100%)',
+                width: '36px',
+                height: '36px',
+                borderRadius: '8px',
+                background: 'linear-gradient(135deg, #03bfd7 0%, #0284c7 100%)',
                 color: '#ffffff',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 900,
-                fontSize: '1.1rem',
-                boxShadow: '0 4px 12px rgba(15, 23, 42, 0.15)',
+                fontSize: '1rem',
+                boxShadow: '0 2px 8px rgba(3, 191, 215, 0.35)',
                 flexShrink: 0
               }}>
                 LM
               </div>
               <div style={{ minWidth: 0 }}>
-                <div style={{ fontSize: '0.98rem', fontWeight: 800, color: 'var(--primary-dark)', letterSpacing: '-0.3px', lineHeight: 1.2 }}>
+                <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#ffffff', letterSpacing: '-0.2px', lineHeight: 1.2 }}>
                   Latmedical
                 </div>
-                <div style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.2rem' }}>
-                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#16a34a', display: 'inline-block', boxShadow: '0 0 0 2px #dcfce7' }}></span>
-                  Panel B2B Activo
+                <div style={{ fontSize: '0.7rem', color: '#00a32a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.35rem', marginTop: '0.15rem' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#00a32a', display: 'inline-block', boxShadow: '0 0 0 2px rgba(0, 163, 42, 0.25)' }}></span>
+                  WooCommerce B2B
                 </div>
               </div>
             </div>
 
             {/* Navigation Groups */}
-            <nav style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+            <nav style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem', paddingTop: '1rem' }}>
               
               {/* Group 1: Catálogo & Comercial */}
               <div>
-                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0.5rem 0.5rem 0.5rem' }}>
+                <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#8c8f94', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 1.25rem 0.4rem 1.25rem' }}>
                   Gestión Comercial
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
                   
                   {/* Tab: Inventario */}
                   <button
                     onClick={() => setActiveTab('inventory')}
+                    className={`wp-nav-btn ${(activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? 'active' : ''}`}
                     style={{
                       width: '100%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '0.7rem 0.85rem',
+                      padding: '0.65rem 1.25rem',
                       border: 'none',
-                      borderRadius: '10px',
                       fontSize: '0.84rem',
                       fontWeight: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? 700 : 500,
                       cursor: 'pointer',
-                      background: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '#f0fdf4' : 'transparent',
-                      color: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '#166534' : 'var(--text-dark)',
-                      boxShadow: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                      borderLeft: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '4px solid #16a34a' : '4px solid transparent',
-                      transition: 'all 0.2s ease',
+                      background: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '#2271b1' : 'transparent',
+                      color: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '#ffffff' : '#c3c4c7',
+                      borderLeft: (activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '4px solid #72aee6' : '4px solid transparent',
+                      transition: 'all 0.15s ease',
                       textAlign: 'left',
                       fontFamily: 'inherit'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      <Package size={17} color={(activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '#16a34a' : '#64748b'} />
+                      <Package size={16} color={(activeTab === 'inventory' || activeTab === 'add-product' || activeTab === 'edit-product') ? '#ffffff' : '#8c8f94'} />
                       <span>Inventario y Precios</span>
                     </div>
                   </button>
@@ -1529,37 +1769,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   {/* Tab: Lotes Outlet */}
                   <button
                     onClick={() => setActiveTab('clearance')}
+                    className={`wp-nav-btn ${activeTab === 'clearance' ? 'active' : ''}`}
                     style={{
                       width: '100%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '0.7rem 0.85rem',
+                      padding: '0.65rem 1.25rem',
                       border: 'none',
-                      borderRadius: '10px',
                       fontSize: '0.84rem',
                       fontWeight: activeTab === 'clearance' ? 700 : 500,
                       cursor: 'pointer',
-                      background: activeTab === 'clearance' ? '#fef2f2' : 'transparent',
-                      color: activeTab === 'clearance' ? '#dc2626' : 'var(--text-dark)',
-                      boxShadow: activeTab === 'clearance' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                      borderLeft: activeTab === 'clearance' ? '4px solid #dc2626' : '4px solid transparent',
-                      transition: 'all 0.2s ease',
+                      background: activeTab === 'clearance' ? '#2271b1' : 'transparent',
+                      color: activeTab === 'clearance' ? '#ffffff' : '#c3c4c7',
+                      borderLeft: activeTab === 'clearance' ? '4px solid #72aee6' : '4px solid transparent',
+                      transition: 'all 0.15s ease',
                       textAlign: 'left',
                       fontFamily: 'inherit'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      <Flame size={17} color={activeTab === 'clearance' ? '#dc2626' : '#64748b'} />
+                      <Flame size={16} color={activeTab === 'clearance' ? '#ffffff' : '#8c8f94'} />
                       <span>Lotes en Oferta</span>
                     </div>
                     <span style={{
-                      fontSize: '0.7rem',
+                      fontSize: '0.68rem',
                       fontWeight: 800,
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '12px',
-                      background: activeTab === 'clearance' ? '#fee2e2' : '#f1f5f9',
-                      color: activeTab === 'clearance' ? '#b91c1c' : '#64748b'
+                      padding: '0.12rem 0.45rem',
+                      borderRadius: '10px',
+                      background: activeTab === 'clearance' ? '#72aee6' : '#2c3338',
+                      color: activeTab === 'clearance' ? '#0f172a' : '#dcdcde'
                     }}>
                       {clearanceOffers.length}
                     </span>
@@ -1568,37 +1807,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   {/* Tab: Pedidos */}
                   <button
                     onClick={() => setActiveTab('orders')}
+                    className={`wp-nav-btn ${activeTab === 'orders' ? 'active' : ''}`}
                     style={{
                       width: '100%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '0.7rem 0.85rem',
+                      padding: '0.65rem 1.25rem',
                       border: 'none',
-                      borderRadius: '10px',
                       fontSize: '0.84rem',
                       fontWeight: activeTab === 'orders' ? 700 : 500,
                       cursor: 'pointer',
-                      background: activeTab === 'orders' ? '#f0fdf4' : 'transparent',
-                      color: activeTab === 'orders' ? '#166534' : 'var(--text-dark)',
-                      boxShadow: activeTab === 'orders' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                      borderLeft: activeTab === 'orders' ? '4px solid #16a34a' : '4px solid transparent',
-                      transition: 'all 0.2s ease',
+                      background: activeTab === 'orders' ? '#2271b1' : 'transparent',
+                      color: activeTab === 'orders' ? '#ffffff' : '#c3c4c7',
+                      borderLeft: activeTab === 'orders' ? '4px solid #72aee6' : '4px solid transparent',
+                      transition: 'all 0.15s ease',
                       textAlign: 'left',
                       fontFamily: 'inherit'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      <ClipboardList size={17} color={activeTab === 'orders' ? '#16a34a' : '#64748b'} />
+                      <ClipboardList size={16} color={activeTab === 'orders' ? '#ffffff' : '#8c8f94'} />
                       <span>Historial de Pedidos</span>
                     </div>
                     <span style={{
-                      fontSize: '0.7rem',
+                      fontSize: '0.68rem',
                       fontWeight: 800,
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '12px',
-                      background: activeTab === 'orders' ? '#dcfce7' : '#f1f5f9',
-                      color: activeTab === 'orders' ? '#15803d' : '#64748b'
+                      padding: '0.12rem 0.45rem',
+                      borderRadius: '10px',
+                      background: activeTab === 'orders' ? '#72aee6' : '#2c3338',
+                      color: activeTab === 'orders' ? '#0f172a' : '#dcdcde'
                     }}>
                       {orders.length}
                     </span>
@@ -1607,37 +1845,36 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   {/* Tab: Contactos / Directorio Médico */}
                   <button
                     onClick={() => setActiveTab('contacts')}
+                    className={`wp-nav-btn ${activeTab === 'contacts' ? 'active' : ''}`}
                     style={{
                       width: '100%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '0.7rem 0.85rem',
+                      padding: '0.65rem 1.25rem',
                       border: 'none',
-                      borderRadius: '10px',
                       fontSize: '0.84rem',
                       fontWeight: activeTab === 'contacts' ? 700 : 500,
                       cursor: 'pointer',
-                      background: activeTab === 'contacts' ? '#f0fdf4' : 'transparent',
-                      color: activeTab === 'contacts' ? '#166534' : 'var(--text-dark)',
-                      boxShadow: activeTab === 'contacts' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                      borderLeft: activeTab === 'contacts' ? '4px solid #16a34a' : '4px solid transparent',
-                      transition: 'all 0.2s ease',
+                      background: activeTab === 'contacts' ? '#2271b1' : 'transparent',
+                      color: activeTab === 'contacts' ? '#ffffff' : '#c3c4c7',
+                      borderLeft: activeTab === 'contacts' ? '4px solid #72aee6' : '4px solid transparent',
+                      transition: 'all 0.15s ease',
                       textAlign: 'left',
                       fontFamily: 'inherit'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      <Users size={17} color={activeTab === 'contacts' ? '#16a34a' : '#64748b'} />
+                      <Users size={16} color={activeTab === 'contacts' ? '#ffffff' : '#8c8f94'} />
                       <span>Directorio Contactos</span>
                     </div>
                     <span style={{
-                      fontSize: '0.7rem',
+                      fontSize: '0.68rem',
                       fontWeight: 800,
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '12px',
-                      background: activeTab === 'contacts' ? '#dcfce7' : '#f1f5f9',
-                      color: activeTab === 'contacts' ? '#15803d' : '#64748b'
+                      padding: '0.12rem 0.45rem',
+                      borderRadius: '10px',
+                      background: activeTab === 'contacts' ? '#72aee6' : '#2c3338',
+                      color: activeTab === 'contacts' ? '#0f172a' : '#dcdcde'
                     }}>
                       {contacts.length}
                     </span>
@@ -1646,38 +1883,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   {/* Tab: Papelera de Reciclaje */}
                   <button
                     onClick={() => setActiveTab('trash')}
+                    className={`wp-nav-btn ${activeTab === 'trash' ? 'active' : ''}`}
                     style={{
                       width: '100%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '0.7rem 0.85rem',
+                      padding: '0.65rem 1.25rem',
                       border: 'none',
-                      borderRadius: '10px',
                       fontSize: '0.84rem',
                       fontWeight: activeTab === 'trash' ? 700 : 500,
                       cursor: 'pointer',
-                      background: activeTab === 'trash' ? '#fff7ed' : 'transparent',
-                      color: activeTab === 'trash' ? '#ea580c' : 'var(--text-dark)',
-                      boxShadow: activeTab === 'trash' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                      borderLeft: activeTab === 'trash' ? '4px solid #ea580c' : '4px solid transparent',
-                      transition: 'all 0.2s ease',
+                      background: activeTab === 'trash' ? '#2271b1' : 'transparent',
+                      color: activeTab === 'trash' ? '#ffffff' : '#c3c4c7',
+                      borderLeft: activeTab === 'trash' ? '4px solid #72aee6' : '4px solid transparent',
+                      transition: 'all 0.15s ease',
                       textAlign: 'left',
                       fontFamily: 'inherit'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      <Trash2 size={17} color={activeTab === 'trash' ? '#ea580c' : '#64748b'} />
+                      <Trash2 size={16} color={activeTab === 'trash' ? '#ffffff' : '#8c8f94'} />
                       <span>Papelera Reciclaje</span>
                     </div>
                     {trashItems.length > 0 && (
                       <span style={{
-                        fontSize: '0.7rem',
+                        fontSize: '0.68rem',
                         fontWeight: 800,
-                        padding: '0.15rem 0.5rem',
-                        borderRadius: '12px',
-                        background: activeTab === 'trash' ? '#ffedd5' : '#fee2e2',
-                        color: activeTab === 'trash' ? '#c2410c' : '#dc2626'
+                        padding: '0.12rem 0.45rem',
+                        borderRadius: '10px',
+                        background: activeTab === 'trash' ? '#fca5a5' : '#7f1d1d',
+                        color: activeTab === 'trash' ? '#7f1d1d' : '#fca5a5'
                       }}>
                         {trashItems.length}
                       </span>
@@ -1689,10 +1925,10 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
 
               {/* Group 2: Punto de Venta & Cotizaciones */}
               <div>
-                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0.5rem 0.5rem 0.5rem' }}>
+                <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#8c8f94', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 1.25rem 0.4rem 1.25rem' }}>
                   Punto de Venta (POS)
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <div style={{ padding: '0 0.85rem' }}>
                   
                   {/* Tab: Manual Order (Holded ERP style) */}
                   <button
@@ -1705,32 +1941,31 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '0.75rem 0.85rem',
+                      padding: '0.65rem 0.85rem',
                       border: 'none',
-                      borderRadius: '10px',
-                      fontSize: '0.84rem',
+                      borderRadius: '6px',
+                      fontSize: '0.82rem',
                       fontWeight: 700,
                       cursor: 'pointer',
-                      background: activeTab === 'manual-order' ? '#eff6ff' : '#f8fafc',
-                      color: activeTab === 'manual-order' ? '#1d4ed8' : '#2563eb',
-                      boxShadow: activeTab === 'manual-order' ? '0 1px 3px rgba(37, 99, 235, 0.1)' : 'none',
-                      borderLeft: activeTab === 'manual-order' ? '4px solid #2563eb' : '4px solid #93c5fd',
+                      background: activeTab === 'manual-order' ? '#0284c7' : '#03bfd7',
+                      color: '#ffffff',
+                      boxShadow: '0 2px 6px rgba(3, 191, 215, 0.3)',
                       transition: 'all 0.2s ease',
                       textAlign: 'left',
                       fontFamily: 'inherit'
                     }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      <Receipt size={17} color="#2563eb" />
-                      <span>+ Crear Venta / Pedido</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.55rem' }}>
+                      <Receipt size={15} color="#ffffff" />
+                      <span>+ Crear Venta B2B</span>
                     </div>
                     <span style={{
-                      fontSize: '0.62rem',
+                      fontSize: '0.6rem',
                       fontWeight: 800,
-                      padding: '0.15rem 0.4rem',
+                      padding: '0.1rem 0.35rem',
                       borderRadius: '4px',
-                      background: '#dbeafe',
-                      color: '#1e40af',
+                      background: 'rgba(255,255,255,0.25)',
+                      color: '#ffffff',
                       textTransform: 'uppercase'
                     }}>
                       POS
@@ -1742,45 +1977,44 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
 
               {/* Group 3: Formularios & Configuración Web */}
               <div>
-                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 0.5rem 0.5rem 0.5rem' }}>
+                <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#8c8f94', textTransform: 'uppercase', letterSpacing: '0.08em', padding: '0 1.25rem 0.4rem 1.25rem' }}>
                   Administración & Web
                 </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
                   
                   {/* Tab: Submissions */}
                   <button
                     onClick={() => setActiveTab('submissions')}
+                    className={`wp-nav-btn ${activeTab === 'submissions' ? 'active' : ''}`}
                     style={{
                       width: '100%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '0.7rem 0.85rem',
+                      padding: '0.65rem 1.25rem',
                       border: 'none',
-                      borderRadius: '10px',
                       fontSize: '0.84rem',
                       fontWeight: activeTab === 'submissions' ? 700 : 500,
                       cursor: 'pointer',
-                      background: activeTab === 'submissions' ? '#f0fdf4' : 'transparent',
-                      color: activeTab === 'submissions' ? '#166534' : 'var(--text-dark)',
-                      boxShadow: activeTab === 'submissions' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                      borderLeft: activeTab === 'submissions' ? '4px solid #16a34a' : '4px solid transparent',
-                      transition: 'all 0.2s ease',
+                      background: activeTab === 'submissions' ? '#2271b1' : 'transparent',
+                      color: activeTab === 'submissions' ? '#ffffff' : '#c3c4c7',
+                      borderLeft: activeTab === 'submissions' ? '4px solid #72aee6' : '4px solid transparent',
+                      transition: 'all 0.15s ease',
                       textAlign: 'left',
                       fontFamily: 'inherit'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      <FileText size={17} color={activeTab === 'submissions' ? '#16a34a' : '#64748b'} />
+                      <FileText size={16} color={activeTab === 'submissions' ? '#ffffff' : '#8c8f94'} />
                       <span>Formularios Web</span>
                     </div>
                     <span style={{
-                      fontSize: '0.7rem',
+                      fontSize: '0.68rem',
                       fontWeight: 800,
-                      padding: '0.15rem 0.5rem',
-                      borderRadius: '12px',
-                      background: activeTab === 'submissions' ? '#dcfce7' : '#f1f5f9',
-                      color: activeTab === 'submissions' ? '#15803d' : '#64748b'
+                      padding: '0.12rem 0.45rem',
+                      borderRadius: '10px',
+                      background: activeTab === 'submissions' ? '#72aee6' : '#2c3338',
+                      color: activeTab === 'submissions' ? '#0f172a' : '#dcdcde'
                     }}>
                       {submissions.length}
                     </span>
@@ -1789,28 +2023,27 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   {/* Tab: Settings */}
                   <button
                     onClick={() => setActiveTab('settings')}
+                    className={`wp-nav-btn ${activeTab === 'settings' ? 'active' : ''}`}
                     style={{
                       width: '100%',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'space-between',
-                      padding: '0.7rem 0.85rem',
+                      padding: '0.65rem 1.25rem',
                       border: 'none',
-                      borderRadius: '10px',
                       fontSize: '0.84rem',
                       fontWeight: activeTab === 'settings' ? 700 : 500,
                       cursor: 'pointer',
-                      background: activeTab === 'settings' ? '#f0fdf4' : 'transparent',
-                      color: activeTab === 'settings' ? '#166534' : 'var(--text-dark)',
-                      boxShadow: activeTab === 'settings' ? '0 1px 3px rgba(0,0,0,0.05)' : 'none',
-                      borderLeft: activeTab === 'settings' ? '4px solid #16a34a' : '4px solid transparent',
-                      transition: 'all 0.2s ease',
+                      background: activeTab === 'settings' ? '#2271b1' : 'transparent',
+                      color: activeTab === 'settings' ? '#ffffff' : '#c3c4c7',
+                      borderLeft: activeTab === 'settings' ? '4px solid #72aee6' : '4px solid transparent',
+                      transition: 'all 0.15s ease',
                       textAlign: 'left',
                       fontFamily: 'inherit'
                     }}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-                      <Settings size={17} color={activeTab === 'settings' ? '#16a34a' : '#64748b'} />
+                      <Settings size={16} color={activeTab === 'settings' ? '#ffffff' : '#8c8f94'} />
                       <span>Configuración Web</span>
                     </div>
                   </button>
@@ -1819,61 +2052,62 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
               </div>
 
             </nav>
+          </div>
 
-            {/* Sidebar Footer / User Profile & Logout */}
-            <div style={{ marginTop: 'auto', paddingTop: '1.25rem', borderTop: '1px solid #f1f5f9', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: '#e2e8f0', color: 'var(--primary-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.78rem' }}>
-                  <User size={16} />
+          {/* Sidebar Footer / User Profile & Logout */}
+          <div style={{ padding: '1rem 1.25rem 0 1.25rem', borderTop: '1px solid #2c3338', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+              <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: '#2c3338', color: '#72aee6', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.75rem' }}>
+                <User size={16} />
+              </div>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f0f0f1', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  Admin Principal
                 </div>
-                <div style={{ minWidth: 0 }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--primary-dark)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    Admin Principal
-                  </div>
-                  <div style={{ fontSize: '0.7rem', color: 'var(--text-light)' }}>
-                    Acceso Total
-                  </div>
+                <div style={{ fontSize: '0.68rem', color: '#8c8f94' }}>
+                  Acceso Total
                 </div>
               </div>
-
-              <button
-                onClick={handleLogout}
-                style={{
-                  width: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '0.45rem',
-                  padding: '0.6rem',
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px',
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                  color: '#dc2626',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  fontFamily: 'inherit'
-                }}
-                onMouseOver={e => {
-                  e.currentTarget.style.backgroundColor = '#fef2f2';
-                  e.currentTarget.style.borderColor = '#fca5a5';
-                }}
-                onMouseOut={e => {
-                  e.currentTarget.style.backgroundColor = '#f8fafc';
-                  e.currentTarget.style.borderColor = '#e2e8f0';
-                }}
-              >
-                <LogOut size={15} /> Cerrar Sesión
-              </button>
             </div>
 
-          </aside>
+            <button
+              onClick={handleLogout}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.4rem',
+                padding: '0.45rem',
+                background: '#2c3338',
+                border: '1px solid #3c434a',
+                borderRadius: '4px',
+                fontSize: '0.75rem',
+                fontWeight: 700,
+                color: '#f87171',
+                cursor: 'pointer',
+                transition: 'all 0.15s ease',
+                fontFamily: 'inherit'
+              }}
+              onMouseOver={e => {
+                e.currentTarget.style.backgroundColor = '#d63638';
+                e.currentTarget.style.color = '#ffffff';
+              }}
+              onMouseOut={e => {
+                e.currentTarget.style.backgroundColor = '#2c3338';
+                e.currentTarget.style.color = '#f87171';
+              }}
+            >
+              <LogOut size={13} /> Cerrar Sesión
+            </button>
+          </div>
 
-          {/* ============================================================== */}
-          {/* RIGHT MAIN CONTENT AREA */}
-          {/* ============================================================== */}
-          <main style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        </aside>
+
+        {/* ============================================================== */}
+        {/* RIGHT MAIN CONTENT AREA */}
+        {/* ============================================================== */}
+        <main className="admin-main-content" style={{ flex: 1, minWidth: 0, padding: '1.75rem 2.25rem 6rem 2.25rem', background: '#f0f0f1', display: 'flex', flexDirection: 'column', gap: '1.5rem', boxSizing: 'border-box' }}>
 
         {/* ============================================================== */}
         {/* EDIT / CREATE PRODUCT: FULL-SCREEN VIEWS */}
@@ -3343,89 +3577,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
                     <button
                       type="button"
-                      onClick={() => {
-                        const printWindow = window.open('', '_blank');
-                        if (!printWindow) return;
-                        const itemsRows = moCreatedOrder.items.map(item => `
-                          <tr>
-                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0;">${item.productName} ${item.variantName ? `<span style="color: #64748b; font-size: 12px;">(${item.variantName})</span>` : ''}</td>
-                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center;">${item.quantity}</td>
-                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right;">USD $${item.price.toFixed(2)}</td>
-                            <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold;">USD $${(item.price * item.quantity).toFixed(2)}</td>
-                          </tr>
-                        `).join('');
-
-                        printWindow.document.write(`
-                          <!DOCTYPE html>
-                          <html>
-                            <head>
-                              <title>Nota de Venta / Proforma - ${moCreatedOrder.id}</title>
-                              <style>
-                                body { font-family: 'Segoe UI', Arial, sans-serif; margin: 40px; color: #1e293b; }
-                                .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0f172a; padding-bottom: 20px; margin-bottom: 25px; }
-                                .logo { font-size: 24px; font-weight: 800; color: #0f172a; letter-spacing: -0.5px; }
-                                .badge { background: #dbeafe; color: #1e40af; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-                                .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 25px; }
-                                .box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 15px; font-size: 13px; line-height: 1.6; }
-                                table { width: 100%; border-collapse: collapse; margin-bottom: 25px; font-size: 14px; }
-                                th { background: #0f172a; color: #ffffff; padding: 10px; text-align: left; font-size: 13px; }
-                                .total-box { text-align: right; font-size: 18px; font-weight: bold; padding: 15px; background: #f1f5f9; border-radius: 8px; color: #0f172a; }
-                                @media print { body { margin: 0; } }
-                              </style>
-                            </head>
-                            <body>
-                              <div class="header">
-                                <div>
-                                  <div class="logo">LATMEDICAL</div>
-                                  <div style="font-size: 12px; color: #64748b;">Dispositivos Médicos & Estética Avanzada</div>
-                                </div>
-                                <div style="text-align: right;">
-                                  <span class="badge">ORDEN DE VENTA #${moCreatedOrder.id}</span>
-                                  <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Fecha: ${moCreatedOrder.date}</div>
-                                </div>
-                              </div>
-                              <div class="meta">
-                                <div class="box">
-                                  <strong style="color: #0f172a; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Cliente / Profesional:</strong><br/>
-                                  <strong style="font-size: 15px;">${moCreatedOrder.fullName}</strong><br/>
-                                  ${moCreatedOrder.specialty} ${moCreatedOrder.licenseNumber ? `• Mat: ${moCreatedOrder.licenseNumber}` : ''}<br/>
-                                  Tel / WhatsApp: ${moCreatedOrder.phone}<br/>
-                                  ${moCreatedOrder.email ? `Email: ${moCreatedOrder.email}` : ''}
-                                </div>
-                                <div class="box">
-                                  <strong style="color: #0f172a; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">Condiciones Comerciales:</strong><br/>
-                                  Método de Pago: <strong>${moCreatedOrder.paymentMethod}</strong><br/>
-                                  Estado: <strong>${moCreatedOrder.status}</strong><br/>
-                                  Entrega: ${moCreatedOrder.address}, ${moCreatedOrder.city} (${moCreatedOrder.province})
-                                </div>
-                              </div>
-                              <table>
-                                <thead>
-                                  <tr>
-                                    <th>Producto / Insumo</th>
-                                    <th style="text-align: center;">Cantidad</th>
-                                    <th style="text-align: right;">Precio Unitario</th>
-                                    <th style="text-align: right;">Total Línea</th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  ${itemsRows}
-                                </tbody>
-                              </table>
-                              <div class="total-box">
-                                TOTAL A PAGAR: USD $${moCreatedOrder.total.toFixed(2)}
-                              </div>
-                              <div style="margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 15px; font-size: 11px; color: #64748b; text-align: center;">
-                                Documento no válido como factura fiscal. Comprobante de venta y despacho interno Latmedical.
-                              </div>
-                              <script>
-                                window.onload = function() { window.print(); }
-                              </script>
-                            </body>
-                          </html>
-                        `);
-                        printWindow.document.close();
-                      }}
+                      onClick={() => handlePrintOrderInvoice(moCreatedOrder)}
                       style={{
                         background: '#0f172a',
                         color: '#ffffff',
@@ -3441,7 +3593,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                         fontFamily: 'inherit'
                       }}
                     >
-                      <Printer size={15} /> Imprimir / PDF Proforma
+                      <Printer size={15} /> Imprimir / PDF A4
                     </button>
 
                     {moCreatedOrder.phone && (
@@ -4289,6 +4441,34 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                           
                           {/* Action status dropdown, Edit & Delete order */}
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }} onClick={(e) => e.stopPropagation()}>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handlePrintOrderInvoice(order);
+                              }}
+                              style={{
+                                background: '#f8fafc',
+                                border: '1px solid #cbd5e1',
+                                color: '#0f172a',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.35rem',
+                                padding: '0.38rem 0.75rem',
+                                borderRadius: '6px',
+                                fontSize: '0.78rem',
+                                fontWeight: 700,
+                                fontFamily: 'inherit',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseOver={e => e.currentTarget.style.backgroundColor = '#e2e8f0'}
+                              onMouseOut={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                              title="Imprimir o Guardar Comprobante PDF A4 de esta orden"
+                            >
+                              <Printer size={13} /> Imprimir PDF
+                            </button>
+
                             <button
                               type="button"
                               onClick={(e) => {
@@ -5834,9 +6014,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
           onExportCSV={() => handleExportStockCSV(true)}
         />
 
-      </div>
-
       <style>{`
+        .wp-nav-btn:hover {
+          background-color: #2c3338 !important;
+          color: #72aee6 !important;
+        }
+        .wp-nav-btn.active:hover {
+          background-color: #2271b1 !important;
+          color: #ffffff !important;
+        }
+        
         @media (max-width: 1024px) {
           .admin-layout {
             flex-direction: column !important;
@@ -5844,7 +6031,11 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
           .admin-sidebar {
             width: 100% !important;
             position: static !important;
+            height: auto !important;
             max-height: none !important;
+          }
+          .admin-main-content {
+            padding: 1.25rem 1rem 4rem 1rem !important;
           }
         }
         
