@@ -110,36 +110,180 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
   const totalGlobalValueARS = Math.round(totalGlobalValueUSD * exchangeRate);
 
   const handlePrint = () => {
-    window.print();
+    // Generate an isolated, clean printable document via a hidden iframe for perfect multi-page A4 PDF export
+    const printElement = document.getElementById('printable-stock-report');
+    if (!printElement) {
+      window.print();
+      return;
+    }
+
+    const existingIframe = document.getElementById('latmedical-print-frame');
+    if (existingIframe) {
+      existingIframe.remove();
+    }
+
+    const iframe = document.createElement('iframe');
+    iframe.id = 'latmedical-print-frame';
+    iframe.style.position = 'fixed';
+    iframe.style.right = '0';
+    iframe.style.bottom = '0';
+    iframe.style.width = '0';
+    iframe.style.height = '0';
+    iframe.style.border = '0';
+    iframe.style.visibility = 'hidden';
+    document.body.appendChild(iframe);
+
+    const logoFullUrl = window.location.origin + getAssetUrl('/logo-full.png');
+
+    const iframeDoc = iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      window.print();
+      return;
+    }
+
+    iframeDoc.open();
+    iframeDoc.write(`
+      <!DOCTYPE html>
+      <html lang="es">
+        <head>
+          <meta charset="UTF-8">
+          <title>Reporte_Auditoria_${reportId}</title>
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+          <style>
+            @page {
+              size: A4 portrait;
+              margin: 12mm 10mm 14mm 10mm;
+            }
+            * {
+              box-sizing: border-box;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
+            }
+            body {
+              margin: 0;
+              padding: 0;
+              font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              color: #1e293b;
+              background: #ffffff;
+              font-size: 8.5pt;
+              line-height: 1.4;
+            }
+            .print-container {
+              width: 100%;
+              max-width: 100%;
+              margin: 0 auto;
+            }
+            .avoid-break {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              page-break-inside: auto;
+              font-size: 8pt;
+            }
+            thead {
+              display: table-header-group;
+            }
+            tbody {
+              display: table-row-group;
+            }
+            tr {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+            th, td {
+              padding: 5px 7px;
+            }
+            .section-box {
+              margin-bottom: 18px;
+            }
+            .kpi-grid {
+              display: grid;
+              grid-template-columns: repeat(4, 1fr);
+              gap: 8px;
+              margin-bottom: 16px;
+            }
+            .kpi-card {
+              background: #f8fafc;
+              border: 1px solid #e2e8f0;
+              border-radius: 6px;
+              padding: 8px 10px;
+            }
+            .badge-report {
+              display: inline-block;
+              background: #0f172a;
+              color: #ffffff;
+              padding: 3px 8px;
+              border-radius: 4px;
+              font-size: 7pt;
+              font-weight: 800;
+              letter-spacing: 0.05em;
+              text-transform: uppercase;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="print-container">
+            ${printElement.innerHTML.replace(/src="[^"]*logo-full\.png"/g, `src="${logoFullUrl}"`)}
+          </div>
+        </body>
+      </html>
+    `);
+    iframeDoc.close();
+
+    // Wait for assets and font to render, then invoke print
+    setTimeout(() => {
+      try {
+        iframe.contentWindow?.focus();
+        iframe.contentWindow?.print();
+      } catch (e) {
+        console.error('Iframe print error, falling back to window.print():', e);
+        window.print();
+      } finally {
+        setTimeout(() => {
+          if (document.body.contains(iframe)) {
+            document.body.removeChild(iframe);
+          }
+        }, 3000);
+      }
+    }, 350);
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: 'rgba(15, 23, 42, 0.75)',
-      backdropFilter: 'blur(8px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 9999,
-      padding: '1rem',
-      overflowY: 'auto'
-    }}>
-      <div style={{
-        background: '#f8fafc',
-        borderRadius: '16px',
-        width: '100%',
-        maxWidth: '1000px',
-        maxHeight: '94vh',
+    <div 
+      className="stock-report-modal-overlay"
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(15, 23, 42, 0.75)',
+        backdropFilter: 'blur(8px)',
         display: 'flex',
-        flexDirection: 'column',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        overflow: 'hidden'
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 9999,
+        padding: '1rem',
+        overflowY: 'auto'
       }}>
+      <div 
+        className="stock-report-modal-dialog"
+        style={{
+          background: '#f8fafc',
+          borderRadius: '16px',
+          width: '100%',
+          maxWidth: '1000px',
+          maxHeight: '94vh',
+          display: 'flex',
+          flexDirection: 'column',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+          overflow: 'hidden'
+        }}>
         
         {/* Top Control Bar (Hidden on print) */}
         <div className="no-print" style={{
@@ -236,13 +380,15 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
         </div>
 
         {/* Scrollable Printable Document Area */}
-        <div style={{
-          overflowY: 'auto',
-          padding: '2rem',
-          display: 'flex',
-          justifyContent: 'center',
-          background: '#f1f5f9'
-        }}>
+        <div 
+          className="stock-report-scroll-wrapper"
+          style={{
+            overflowY: 'auto',
+            padding: '2rem',
+            display: 'flex',
+            justifyContent: 'center',
+            background: '#f1f5f9'
+          }}>
           
           {/* A4 Sheet Container */}
           <div id="printable-stock-report" style={{
@@ -258,19 +404,19 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
           }}>
             
             {/* Header / Institutional Brand */}
-            <div style={{
+            <div className="avoid-break" style={{
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'flex-start',
               borderBottom: '2px solid #0f172a',
-              paddingBottom: '1.5rem',
-              marginBottom: '1.5rem'
+              paddingBottom: '1.25rem',
+              marginBottom: '1.25rem'
             }}>
               <div>
                 <img 
                   src={getAssetUrl('/logo-full.png')} 
                   alt="Latmedical International" 
-                  style={{ height: '48px', width: 'auto', marginBottom: '0.5rem' }} 
+                  style={{ height: '46px', width: 'auto', marginBottom: '0.4rem', display: 'block' }} 
                 />
                 <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
                   Latmedical International S.A. | CUIT: 30-71689241-9
@@ -291,14 +437,14 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
                   fontWeight: 800,
                   letterSpacing: '0.05em',
                   textTransform: 'uppercase',
-                  marginBottom: '0.4rem'
+                  marginBottom: '0.35rem'
                 }}>
                   Informe de Auditoría
                 </div>
-                <h4 style={{ margin: '0.1rem 0', fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>
+                <h4 style={{ margin: '0.1rem 0', fontSize: '0.98rem', fontWeight: 800, color: '#0f172a' }}>
                   {reportId}
                 </h4>
-                <p style={{ margin: 0, fontSize: '0.75rem', color: '#64748b' }}>
+                <p style={{ margin: 0, fontSize: '0.74rem', color: '#64748b' }}>
                   <strong>Fecha de Emisión:</strong> {reportDate}
                 </p>
                 <p style={{ margin: 0, fontSize: '0.72rem', color: '#059669', fontWeight: 600 }}>
@@ -308,53 +454,53 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
             </div>
 
             {/* Executive KPI Summary Cards */}
-            <div style={{
+            <div className="avoid-break" style={{
               display: 'grid',
               gridTemplateColumns: 'repeat(4, 1fr)',
-              gap: '0.75rem',
-              marginBottom: '1.75rem'
+              gap: '0.65rem',
+              marginBottom: '1.5rem'
             }}>
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.85rem' }}>
-                <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.75rem' }}>
+                <span style={{ fontSize: '0.66rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>
                   Total Existencias
                 </span>
-                <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a' }}>
+                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#0f172a' }}>
                   {totalGlobalUnits.toLocaleString('es-AR')} <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>u.</span>
                 </span>
               </div>
 
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.85rem' }}>
-                <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.75rem' }}>
+                <span style={{ fontSize: '0.66rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>
                   Valorización (USD)
                 </span>
-                <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#059669' }}>
+                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#059669' }}>
                   USD ${totalGlobalValueUSD.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                 </span>
               </div>
 
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.85rem' }}>
-                <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.75rem' }}>
+                <span style={{ fontSize: '0.66rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>
                   Valorización (ARS)
                 </span>
-                <span style={{ fontSize: '1.15rem', fontWeight: 800, color: '#0369a1' }}>
+                <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0369a1' }}>
                   $ {totalGlobalValueARS.toLocaleString('es-AR')}
                 </span>
               </div>
 
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.85rem' }}>
-                <span style={{ fontSize: '0.68rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>
+              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.75rem' }}>
+                <span style={{ fontSize: '0.66rem', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', display: 'block', marginBottom: '0.2rem' }}>
                   SKUs / Variantes
                 </span>
-                <span style={{ fontSize: '1.3rem', fontWeight: 800, color: '#6d28d9' }}>
+                <span style={{ fontSize: '1.25rem', fontWeight: 800, color: '#6d28d9' }}>
                   {totalSKUs} <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#64748b' }}>referencias</span>
                 </span>
               </div>
             </div>
 
             {/* Section 1: Catálogo Regular */}
-            <div style={{ marginBottom: '2rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
-                <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#0f172a' }}>
+            <div style={{ marginBottom: '1.75rem' }}>
+              <div className="avoid-break" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', borderBottom: '1px solid #e2e8f0', paddingBottom: '0.35rem' }}>
+                <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#0f172a' }}>
                   1. Catálogo Regular (Hilos PDO V-Lift Pro & Medicina Regenerativa)
                 </h4>
                 <span style={{ fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
@@ -362,15 +508,15 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
                 </span>
               </div>
 
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.73rem' }}>
                 <thead>
                   <tr style={{ background: '#f1f5f9', borderTop: '1px solid #cbd5e1', borderBottom: '1.5px solid #0f172a' }}>
-                    <th style={{ padding: '0.45rem 0.6rem', textAlign: 'left', fontWeight: 700 }}>Producto / Línea</th>
-                    <th style={{ padding: '0.45rem 0.6rem', textAlign: 'left', fontWeight: 700 }}>Marca</th>
-                    <th style={{ padding: '0.45rem 0.6rem', textAlign: 'left', fontWeight: 700 }}>Variedad / Calibre</th>
-                    <th style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: 700 }}>Stock Físico</th>
-                    <th style={{ padding: '0.45rem 0.6rem', textAlign: 'right', fontWeight: 700 }}>Precio Unit. (USD)</th>
-                    <th style={{ padding: '0.45rem 0.6rem', textAlign: 'right', fontWeight: 700 }}>Total (USD)</th>
+                    <th style={{ padding: '0.4rem 0.55rem', textAlign: 'left', fontWeight: 700 }}>Producto / Línea</th>
+                    <th style={{ padding: '0.4rem 0.55rem', textAlign: 'left', fontWeight: 700 }}>Marca</th>
+                    <th style={{ padding: '0.4rem 0.55rem', textAlign: 'left', fontWeight: 700 }}>Variedad / Calibre</th>
+                    <th style={{ padding: '0.4rem 0.55rem', textAlign: 'center', fontWeight: 700 }}>Stock Físico</th>
+                    <th style={{ padding: '0.4rem 0.55rem', textAlign: 'right', fontWeight: 700 }}>Precio Unit. (USD)</th>
+                    <th style={{ padding: '0.4rem 0.55rem', textAlign: 'right', fontWeight: 700 }}>Total (USD)</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -379,17 +525,18 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
                       key={`${row.productId}-${row.variantName}-${idx}`}
                       style={{ 
                         borderBottom: '1px solid #e2e8f0',
-                        background: idx % 2 === 0 ? '#ffffff' : '#f8fafc'
+                        background: idx % 2 === 0 ? '#ffffff' : '#f8fafc',
+                        pageBreakInside: 'avoid'
                       }}
                     >
-                      <td style={{ padding: '0.45rem 0.6rem', fontWeight: 600, color: '#0f172a' }}>{row.productName}</td>
-                      <td style={{ padding: '0.45rem 0.6rem', color: '#64748b' }}>{row.brand}</td>
-                      <td style={{ padding: '0.45rem 0.6rem', fontWeight: 600, color: '#0369a1' }}>{row.variantName}</td>
-                      <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: 700, color: row.stock > 0 ? '#059669' : '#dc2626' }}>
+                      <td style={{ padding: '0.38rem 0.55rem', fontWeight: 600, color: '#0f172a' }}>{row.productName}</td>
+                      <td style={{ padding: '0.38rem 0.55rem', color: '#64748b' }}>{row.brand}</td>
+                      <td style={{ padding: '0.38rem 0.55rem', fontWeight: 600, color: '#0369a1' }}>{row.variantName}</td>
+                      <td style={{ padding: '0.38rem 0.55rem', textAlign: 'center', fontWeight: 700, color: row.stock > 0 ? '#059669' : '#dc2626' }}>
                         {row.stock} {row.stock === 0 ? '(Agotado)' : ''}
                       </td>
-                      <td style={{ padding: '0.45rem 0.6rem', textAlign: 'right' }}>USD ${row.unitPrice.toFixed(2)}</td>
-                      <td style={{ padding: '0.45rem 0.6rem', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
+                      <td style={{ padding: '0.38rem 0.55rem', textAlign: 'right' }}>USD ${row.unitPrice.toFixed(2)}</td>
+                      <td style={{ padding: '0.38rem 0.55rem', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
                         USD ${row.totalValue.toFixed(2)}
                       </td>
                     </tr>
@@ -400,9 +547,9 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
 
             {/* Section 2: Outlet / Clearance Batches */}
             {clearanceOffers.length > 0 && (
-              <div style={{ marginBottom: '2rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
-                  <h4 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: '#9a3412' }}>
+              <div style={{ marginBottom: '1.75rem' }}>
+                <div className="avoid-break" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem', borderBottom: '1px solid #fed7aa', paddingBottom: '0.35rem' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 800, color: '#9a3412' }}>
                     2. Lotes Especiales en Oferta (Outlet por Vencimiento Cercano)
                   </h4>
                   <span style={{ fontSize: '0.75rem', color: '#c2410c', fontWeight: 600 }}>
@@ -410,17 +557,17 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
                   </span>
                 </div>
 
-                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.75rem' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.73rem' }}>
                   <thead>
                     <tr style={{ background: '#fff7ed', borderTop: '1px solid #fed7aa', borderBottom: '1.5px solid #ea580c' }}>
-                      <th style={{ padding: '0.45rem 0.6rem', textAlign: 'left', fontWeight: 700, color: '#9a3412' }}>Lote / Batch</th>
-                      <th style={{ padding: '0.45rem 0.6rem', textAlign: 'left', fontWeight: 700, color: '#9a3412' }}>Producto</th>
-                      <th style={{ padding: '0.45rem 0.6rem', textAlign: 'left', fontWeight: 700, color: '#9a3412' }}>Medida / Calibre</th>
-                      <th style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: 700, color: '#9a3412' }}>Caducidad</th>
-                      <th style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: 700, color: '#9a3412' }}>Stock</th>
-                      <th style={{ padding: '0.45rem 0.6rem', textAlign: 'right', fontWeight: 700, color: '#9a3412' }}>Precio Reg.</th>
-                      <th style={{ padding: '0.45rem 0.6rem', textAlign: 'right', fontWeight: 700, color: '#9a3412' }}>Precio Oferta</th>
-                      <th style={{ padding: '0.45rem 0.6rem', textAlign: 'right', fontWeight: 700, color: '#9a3412' }}>Total Lote</th>
+                      <th style={{ padding: '0.4rem 0.55rem', textAlign: 'left', fontWeight: 700, color: '#9a3412' }}>Lote / Batch</th>
+                      <th style={{ padding: '0.4rem 0.55rem', textAlign: 'left', fontWeight: 700, color: '#9a3412' }}>Producto</th>
+                      <th style={{ padding: '0.4rem 0.55rem', textAlign: 'left', fontWeight: 700, color: '#9a3412' }}>Medida / Calibre</th>
+                      <th style={{ padding: '0.4rem 0.55rem', textAlign: 'center', fontWeight: 700, color: '#9a3412' }}>Caducidad</th>
+                      <th style={{ padding: '0.4rem 0.55rem', textAlign: 'center', fontWeight: 700, color: '#9a3412' }}>Stock</th>
+                      <th style={{ padding: '0.4rem 0.55rem', textAlign: 'right', fontWeight: 700, color: '#9a3412' }}>Precio Reg.</th>
+                      <th style={{ padding: '0.4rem 0.55rem', textAlign: 'right', fontWeight: 700, color: '#9a3412' }}>Precio Oferta</th>
+                      <th style={{ padding: '0.4rem 0.55rem', textAlign: 'right', fontWeight: 700, color: '#9a3412' }}>Total Lote</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -431,21 +578,22 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
                           key={c.id}
                           style={{ 
                             borderBottom: '1px solid #ffedd5',
-                            background: idx % 2 === 0 ? '#ffffff' : '#fffbeb'
+                            background: idx % 2 === 0 ? '#ffffff' : '#fffbeb',
+                            pageBreakInside: 'avoid'
                           }}
                         >
-                          <td style={{ padding: '0.45rem 0.6rem', fontWeight: 700, color: '#9a3412' }}>{c.batchNumber || 'LOTE-ESP'}</td>
-                          <td style={{ padding: '0.45rem 0.6rem', fontWeight: 600 }}>{c.productName}</td>
-                          <td style={{ padding: '0.45rem 0.6rem' }}>{c.variantName || 'Estándar'}</td>
-                          <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center', color: '#b45309', fontWeight: 600 }}>{c.expiryDate}</td>
-                          <td style={{ padding: '0.45rem 0.6rem', textAlign: 'center', fontWeight: 800, color: '#ea580c' }}>{c.stock}</td>
-                          <td style={{ padding: '0.45rem 0.6rem', textAlign: 'right', color: '#94a3b8', textDecoration: 'line-through' }}>
+                          <td style={{ padding: '0.38rem 0.55rem', fontWeight: 700, color: '#9a3412' }}>{c.batchNumber || 'LOTE-ESP'}</td>
+                          <td style={{ padding: '0.38rem 0.55rem', fontWeight: 600 }}>{c.productName}</td>
+                          <td style={{ padding: '0.38rem 0.55rem' }}>{c.variantName || 'Estándar'}</td>
+                          <td style={{ padding: '0.38rem 0.55rem', textAlign: 'center', color: '#b45309', fontWeight: 600 }}>{c.expiryDate}</td>
+                          <td style={{ padding: '0.38rem 0.55rem', textAlign: 'center', fontWeight: 800, color: '#ea580c' }}>{c.stock}</td>
+                          <td style={{ padding: '0.38rem 0.55rem', textAlign: 'right', color: '#94a3b8', textDecoration: 'line-through' }}>
                             USD ${(c.regularPrice || 0).toFixed(2)}
                           </td>
-                          <td style={{ padding: '0.45rem 0.6rem', textAlign: 'right', fontWeight: 700, color: '#ea580c' }}>
+                          <td style={{ padding: '0.38rem 0.55rem', textAlign: 'right', fontWeight: 700, color: '#ea580c' }}>
                             USD ${c.clearancePrice.toFixed(2)}
                           </td>
-                          <td style={{ padding: '0.45rem 0.6rem', textAlign: 'right', fontWeight: 800, color: '#9a3412' }}>
+                          <td style={{ padding: '0.38rem 0.55rem', textAlign: 'right', fontWeight: 800, color: '#9a3412' }}>
                             USD ${totalVal.toFixed(2)}
                           </td>
                         </tr>
@@ -457,7 +605,7 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
             )}
 
             {/* Legal Certification and Signatures */}
-            <div style={{
+            <div className="avoid-break" style={{
               borderTop: '2px solid #0f172a',
               paddingTop: '1.25rem',
               display: 'grid',
@@ -475,7 +623,7 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
                 </p>
               </div>
 
-              <div style={{ textAlign: 'center', paddingTop: '1.5rem' }}>
+              <div style={{ textAlign: 'center', paddingTop: '1.25rem' }}>
                 <div style={{ borderTop: '1px dashed #64748b', width: '80%', margin: '0 auto 0.4rem auto' }} />
                 <p style={{ margin: 0, fontSize: '0.75rem', fontWeight: 700, color: '#0f172a' }}>
                   Responsable de Control de Stock
@@ -491,27 +639,109 @@ export const StockReportModal: React.FC<StockReportModalProps> = ({
 
       </div>
 
-      {/* Print Stylesheet for pure A4 export */}
+      {/* Global & Fallback Print Stylesheet for Pure Multi-Page A4 PDF Export */}
       <style>{`
         @media print {
-          body * {
-            visibility: hidden;
+          /* Reset root layout constraints for multi-page flow */
+          html, body {
+            overflow: visible !important;
+            height: auto !important;
+            min-height: auto !important;
+            background: #ffffff !important;
+            color: #1e293b !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
-          #printable-stock-report, #printable-stock-report * {
-            visibility: visible;
+
+          /* Hide everything except the modal report */
+          .wp-admin-bar,
+          header,
+          footer,
+          nav,
+          .no-print,
+          .admin-sidebar,
+          .admin-layout > *:not(.admin-main-content),
+          .admin-main-content > *:not(.stock-report-modal-overlay) {
+            display: none !important;
           }
-          #printable-stock-report {
-            position: absolute;
-            left: 0;
-            top: 0;
+
+          /* Neutralize modal positioning to let document flow naturally */
+          .stock-report-modal-overlay {
+            position: static !important;
+            display: block !important;
+            background: transparent !important;
+            backdrop-filter: none !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            overflow: visible !important;
+            height: auto !important;
+            width: 100% !important;
+            z-index: auto !important;
+          }
+
+          .stock-report-modal-dialog {
+            position: static !important;
+            display: block !important;
+            max-height: none !important;
+            height: auto !important;
             width: 100% !important;
             max-width: 100% !important;
-            padding: 10mm !important;
             box-shadow: none !important;
-            background: white !important;
+            border: none !important;
+            border-radius: 0 !important;
+            background: #ffffff !important;
+            overflow: visible !important;
           }
-          .no-print {
-            display: none !important;
+
+          .stock-report-scroll-wrapper {
+            position: static !important;
+            display: block !important;
+            overflow: visible !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            height: auto !important;
+            background: #ffffff !important;
+          }
+
+          #printable-stock-report {
+            position: static !important;
+            display: block !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            border: none !important;
+            background: #ffffff !important;
+          }
+
+          table {
+            width: 100% !important;
+            border-collapse: collapse !important;
+            page-break-inside: auto !important;
+          }
+
+          thead {
+            display: table-header-group !important;
+          }
+
+          tbody {
+            display: table-row-group !important;
+          }
+
+          tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          .avoid-break {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          @page {
+            size: A4 portrait;
+            margin: 12mm 10mm 14mm 10mm;
           }
         }
       `}</style>
