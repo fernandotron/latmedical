@@ -37,7 +37,10 @@ import {
   MessageSquare,
   RotateCcw,
   Clock,
-  Archive
+  Archive,
+  ArrowRight,
+  ArrowLeft,
+  ChevronRight
 } from 'lucide-react';
 import defaultSettings from '../data/general_settings.json';
 import defaultSlides from '../data/home_slides.json';
@@ -278,6 +281,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
   const [moOrderNotes, setMoOrderNotes] = useState('');
   const [moGlobalDiscountUSD, setMoGlobalDiscountUSD] = useState<string>('0');
   const [moDecrementStock, setMoDecrementStock] = useState<boolean>(true);
+  const [moStep, setMoStep] = useState<1 | 2>(1);
 
   // Contacts Management State
   const [contactSearchQuery, setContactSearchQuery] = useState('');
@@ -515,6 +519,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
     });
 
     setMoItems(mappedItems);
+    setMoStep(1);
     setActiveTab('manual-order');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -582,6 +587,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
     setMoGlobalDiscountUSD('0');
     setMoCreatedOrder(null);
     setMoError('');
+    setMoStep(1);
   };
 
   // Calculations
@@ -3652,26 +3658,136 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
               </div>
             )}
 
-            {/* 2. Main Holded ERP Order Builder Grid */}
+            {/* 2. Step Progress Indicator */}
             <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(360px, 1fr))',
-              gap: '1.5rem',
-              alignItems: 'start'
+              display: 'flex',
+              alignItems: 'center',
+              background: '#ffffff',
+              border: '1px solid var(--border-light)',
+              borderRadius: '12px',
+              padding: '0.6rem 0.75rem',
+              boxShadow: 'var(--shadow-sm)',
+              gap: '0.75rem',
+              flexWrap: 'wrap'
             }}>
-              
-              {/* LEFT COLUMN: Product Selector + Holded-style Editable Line Items Table */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+              <button
+                type="button"
+                onClick={() => setMoStep(1)}
+                style={{
+                  flex: 1,
+                  minWidth: '240px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.65rem 1rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: moStep === 1 ? '#eff6ff' : 'transparent',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.2s ease',
+                  borderBottom: moStep === 1 ? '3px solid #2563eb' : '3px solid transparent'
+                }}
+              >
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: moStep === 1 ? '#2563eb' : (moItems.length > 0 ? '#16a34a' : '#94a3b8'),
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  flexShrink: 0
+                }}>
+                  {moItems.length > 0 && moStep !== 1 ? <Check size={16} strokeWidth={3} /> : '1'}
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.86rem', fontWeight: 800, color: moStep === 1 ? '#1e40af' : 'var(--primary-dark)' }}>
+                    Paso 1: Insumos & Líneas de Venta
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: moStep === 1 ? '#3b82f6' : 'var(--text-medium)', fontWeight: 600 }}>
+                    {moItems.length === 0 ? 'Seleccionar productos y precios' : `${moTotalUnits} unidades • USD $${moSubtotalUSD.toFixed(2)}`}
+                  </div>
+                </div>
+              </button>
+
+              <div style={{ color: '#cbd5e1', display: 'flex', alignItems: 'center' }}>
+                <ChevronRight size={20} />
+              </div>
+
+              <button
+                type="button"
+                disabled={moItems.length === 0}
+                onClick={() => moItems.length > 0 && setMoStep(2)}
+                style={{
+                  flex: 1,
+                  minWidth: '240px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.75rem',
+                  padding: '0.65rem 1rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: moStep === 2 ? '#eff6ff' : 'transparent',
+                  cursor: moItems.length > 0 ? 'pointer' : 'not-allowed',
+                  opacity: moItems.length > 0 ? 1 : 0.5,
+                  textAlign: 'left',
+                  transition: 'all 0.2s ease',
+                  borderBottom: moStep === 2 ? '3px solid #2563eb' : '3px solid transparent'
+                }}
+              >
+                <div style={{
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  background: moStep === 2 ? '#2563eb' : '#94a3b8',
+                  color: '#ffffff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontWeight: 800,
+                  fontSize: '0.85rem',
+                  flexShrink: 0
+                }}>
+                  2
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.86rem', fontWeight: 800, color: moStep === 2 ? '#1e40af' : 'var(--primary-dark)' }}>
+                    Paso 2: Datos del Comprador & Cierre
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: moStep === 2 ? '#3b82f6' : 'var(--text-medium)', fontWeight: 600 }}>
+                    {moCustomerName ? `${moCustomerName} • ${moPaymentMethod}` : 'Datos del médico, clínica y despacho'}
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            {/* ============================================================== */}
+            {/* STEP 1: PRODUCT CATALOG & EDITABLE LINE ITEMS */}
+            {/* ============================================================== */}
+            {moStep === 1 && (
+              <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+                gap: '1.5rem',
+                alignItems: 'start'
+              }}>
                 
-                {/* Product Search & Quick Add Box */}
+                {/* LEFT: 1. Buscar y Agregar Insumos al Pedido */}
                 <div style={{
                   background: '#ffffff',
                   border: '1px solid var(--border-light)',
                   borderRadius: '12px',
                   padding: '1.25rem',
-                  boxShadow: 'var(--shadow-sm)'
+                  boxShadow: 'var(--shadow-sm)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '1rem'
                 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '0.5rem' }}>
                     <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-dark)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                       <Search size={16} color="#2563eb" /> 1. Buscar y Agregar Insumos al Pedido
                     </h3>
@@ -3701,7 +3817,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   </div>
 
                   {/* Search input */}
-                  <div style={{ position: 'relative', marginBottom: '1rem' }}>
+                  <div style={{ position: 'relative' }}>
                     <Search size={16} color="#94a3b8" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
                     <input
                       type="text"
@@ -3721,17 +3837,17 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                     />
                   </div>
 
-                  {/* Quick Products Pick Grid */}
+                  {/* Spacious Products Pick Grid */}
                   <div style={{
-                    maxHeight: '260px',
+                    maxHeight: '480px',
                     overflowY: 'auto',
                     border: '1px solid #f1f5f9',
                     borderRadius: '8px',
-                    padding: '0.5rem',
+                    padding: '0.65rem',
                     background: '#f8fafc',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '0.4rem'
+                    gap: '0.5rem'
                   }}>
                     {products
                       .filter(p => {
@@ -3752,25 +3868,26 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                               background: '#ffffff',
                               border: '1px solid #e2e8f0',
                               borderRadius: '8px',
-                              padding: '0.65rem 0.85rem',
+                              padding: '0.75rem 0.9rem',
                               display: 'flex',
                               justifyContent: 'space-between',
                               alignItems: 'center',
                               flexWrap: 'wrap',
-                              gap: '0.5rem'
+                              gap: '0.6rem',
+                              boxShadow: '0 1px 2px rgba(0,0,0,0.02)'
                             }}
                           >
                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                               <img
                                 src={p.image}
                                 alt={p.name}
-                                style={{ width: '38px', height: '38px', objectFit: 'contain', borderRadius: '4px', background: '#fff', border: '1px solid #f1f5f9' }}
+                                style={{ width: '42px', height: '42px', objectFit: 'contain', borderRadius: '6px', background: '#fff', border: '1px solid #f1f5f9' }}
                               />
                               <div>
-                                <div style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--primary-dark)' }}>
+                                <div style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--primary-dark)' }}>
                                   {p.name}
                                 </div>
-                                <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
+                                <div style={{ fontSize: '0.72rem', color: 'var(--text-light)', display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.15rem' }}>
                                   <span className="badge badge-dark" style={{ fontSize: '0.62rem', padding: '0.1rem 0.4rem' }}>{p.brand}</span>
                                   <span>Precio Base: USD ${p.price.toFixed(2)}</span>
                                 </div>
@@ -3780,7 +3897,7 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                             {/* Actions / Variants */}
                             <div>
                               {hasVariants ? (
-                                <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                                <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
                                   {inv.variants.map(v => (
                                     <button
                                       key={v.id}
@@ -3789,21 +3906,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                                       style={{
                                         background: '#eff6ff',
                                         border: '1px solid #bfdbfe',
-                                        borderRadius: '4px',
-                                        padding: '0.25rem 0.55rem',
-                                        fontSize: '0.72rem',
+                                        borderRadius: '6px',
+                                        padding: '0.3rem 0.6rem',
+                                        fontSize: '0.74rem',
                                         fontWeight: 700,
                                         color: '#1d4ed8',
                                         cursor: 'pointer',
                                         display: 'inline-flex',
                                         alignItems: 'center',
-                                        gap: '0.25rem',
-                                        fontFamily: 'inherit'
+                                        gap: '0.3rem',
+                                        fontFamily: 'inherit',
+                                        transition: 'all 0.15s ease'
                                       }}
+                                      onMouseOver={e => e.currentTarget.style.backgroundColor = '#dbeafe'}
+                                      onMouseOut={e => e.currentTarget.style.backgroundColor = '#eff6ff'}
                                       title={`Agregar calibre ${v.name} (Stock: ${v.stock})`}
                                     >
                                       + {v.name}
-                                      <span style={{ fontSize: '0.65rem', color: v.stock > 0 ? '#16a34a' : '#dc2626' }}>
+                                      <span style={{ fontSize: '0.66rem', color: v.stock > 0 ? '#16a34a' : '#dc2626', fontWeight: 800 }}>
                                         ({v.stock})
                                       </span>
                                     </button>
@@ -3818,17 +3938,18 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                                     color: '#ffffff',
                                     border: 'none',
                                     borderRadius: '6px',
-                                    padding: '0.35rem 0.85rem',
-                                    fontSize: '0.75rem',
+                                    padding: '0.4rem 0.95rem',
+                                    fontSize: '0.78rem',
                                     fontWeight: 700,
                                     cursor: 'pointer',
                                     display: 'inline-flex',
                                     alignItems: 'center',
-                                    gap: '0.3rem',
-                                    fontFamily: 'inherit'
+                                    gap: '0.35rem',
+                                    fontFamily: 'inherit',
+                                    boxShadow: '0 2px 6px rgba(37, 99, 235, 0.2)'
                                   }}
                                 >
-                                  <Plus size={13} /> Agregar
+                                  <Plus size={14} /> Agregar
                                 </button>
                               )}
                             </div>
@@ -3838,13 +3959,16 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   </div>
                 </div>
 
-                {/* Holded-Style Editable Order Lines Table */}
+                {/* RIGHT: 2. Líneas de Venta (Precios Especiales Editables) */}
                 <div style={{
                   background: '#ffffff',
                   border: '1px solid var(--border-light)',
                   borderRadius: '12px',
                   overflow: 'hidden',
-                  boxShadow: 'var(--shadow-sm)'
+                  boxShadow: 'var(--shadow-sm)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minHeight: '480px'
                 }}>
                   <div style={{
                     padding: '1rem 1.25rem',
@@ -3863,168 +3987,228 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   </div>
 
                   {moItems.length === 0 ? (
-                    <div style={{ padding: '3.5rem 2rem', textAlign: 'center', color: 'var(--text-medium)' }}>
-                      <ShoppingCart size={40} style={{ opacity: 0.3, marginBottom: '0.75rem' }} />
-                      <p style={{ margin: '0 0 0.3rem 0', fontWeight: 700, fontSize: '0.95rem' }}>No hay productos cargados en esta venta</p>
-                      <p style={{ margin: 0, fontSize: '0.8rem', color: 'var(--text-light)' }}>
-                        Utilice el buscador superior para añadir calibres de hilos o kits Seffiline a la orden.
+                    <div style={{ padding: '4rem 2rem', textAlign: 'center', color: 'var(--text-medium)', flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                      <ShoppingCart size={46} style={{ opacity: 0.25, marginBottom: '0.85rem' }} />
+                      <p style={{ margin: '0 0 0.35rem 0', fontWeight: 700, fontSize: '1rem', color: 'var(--primary-dark)' }}>No hay productos cargados en esta venta</p>
+                      <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-light)', maxWidth: '320px' }}>
+                        Utilice el buscador del panel izquierdo para añadir calibres de hilos o kits Seffiline a la orden.
                       </p>
                     </div>
                   ) : (
-                    <div style={{ overflowX: 'auto' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
-                        <thead>
-                          <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-light)', color: 'var(--text-medium)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            <th style={{ padding: '0.75rem 1rem' }}>Producto / Medida</th>
-                            <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>Stock</th>
-                            <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', width: '90px' }}>Cantidad</th>
-                            <th style={{ padding: '0.75rem 0.75rem', textAlign: 'right' }}>Precio Lista</th>
-                            <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', width: '130px' }}>
-                              <span style={{ color: '#ea580c', fontWeight: 800 }}>Precio Especial (USD)</span>
-                            </th>
-                            <th style={{ padding: '0.75rem 0.75rem', textAlign: 'right' }}>Subtotal</th>
-                            <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', width: '50px' }}></th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {moItems.map((item, idx) => {
-                            const lineTotal = item.price * item.quantity;
-                            const isDiscounted = item.price < item.regularPrice;
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div style={{ overflowX: 'auto', maxHeight: '360px' }}>
+                        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+                          <thead style={{ position: 'sticky', top: 0, zIndex: 10 }}>
+                            <tr style={{ background: '#f8fafc', borderBottom: '1px solid var(--border-light)', color: 'var(--text-medium)', fontSize: '0.74rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                              <th style={{ padding: '0.75rem 1rem' }}>Producto / Medida</th>
+                              <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>Stock</th>
+                              <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', width: '80px' }}>Cant.</th>
+                              <th style={{ padding: '0.75rem 0.75rem', textAlign: 'right' }}>P. Lista</th>
+                              <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', width: '120px' }}>
+                                <span style={{ color: '#ea580c', fontWeight: 800 }}>P. Venta (USD)</span>
+                              </th>
+                              <th style={{ padding: '0.75rem 0.75rem', textAlign: 'right' }}>Subtotal</th>
+                              <th style={{ padding: '0.75rem 0.75rem', textAlign: 'center', width: '45px' }}></th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {moItems.map((item, idx) => {
+                              const lineTotal = item.price * item.quantity;
+                              const isDiscounted = item.price < item.regularPrice;
 
-                            return (
-                              <tr key={item.lineId} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
-                                {/* Product info */}
-                                <td style={{ padding: '0.75rem 1rem' }}>
-                                  <div style={{ fontWeight: 700, color: 'var(--primary-dark)' }}>
-                                    {item.productName}
-                                  </div>
-                                  <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.15rem' }}>
-                                    <span style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#f1f5f9', color: 'var(--text-medium)', fontWeight: 600 }}>
-                                      {item.brand}
-                                    </span>
-                                    {item.variantName && (
-                                      <span style={{ fontSize: '0.72rem', color: '#0369a1', fontWeight: 700, background: '#e0f2fe', padding: '0.1rem 0.45rem', borderRadius: '4px' }}>
-                                        {item.variantName}
+                              return (
+                                <tr key={item.lineId} style={{ borderBottom: '1px solid #f1f5f9', background: idx % 2 === 0 ? '#ffffff' : '#fafafa' }}>
+                                  {/* Product info */}
+                                  <td style={{ padding: '0.75rem 1rem' }}>
+                                    <div style={{ fontWeight: 700, color: 'var(--primary-dark)' }}>
+                                      {item.productName}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center', marginTop: '0.15rem' }}>
+                                      <span style={{ fontSize: '0.68rem', padding: '0.1rem 0.4rem', borderRadius: '4px', background: '#f1f5f9', color: 'var(--text-medium)', fontWeight: 600 }}>
+                                        {item.brand}
                                       </span>
-                                    )}
-                                  </div>
-                                </td>
+                                      {item.variantName && (
+                                        <span style={{ fontSize: '0.72rem', color: '#0369a1', fontWeight: 700, background: '#e0f2fe', padding: '0.1rem 0.45rem', borderRadius: '4px' }}>
+                                          {item.variantName}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
 
-                                {/* Stock available */}
-                                <td style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>
-                                  <span style={{
-                                    fontSize: '0.72rem',
-                                    fontWeight: 700,
-                                    color: item.stock > 0 ? '#16a34a' : '#dc2626',
-                                    background: item.stock > 0 ? '#dcfce7' : '#fee2e2',
-                                    padding: '0.2rem 0.5rem',
-                                    borderRadius: '12px',
-                                    whiteSpace: 'nowrap'
-                                  }}>
-                                    {item.stock > 0 ? `${item.stock} disp.` : 'Agotado'}
-                                  </span>
-                                </td>
+                                  {/* Stock available */}
+                                  <td style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>
+                                    <span style={{
+                                      fontSize: '0.72rem',
+                                      fontWeight: 700,
+                                      color: item.stock > 0 ? '#16a34a' : '#dc2626',
+                                      background: item.stock > 0 ? '#dcfce7' : '#fee2e2',
+                                      padding: '0.2rem 0.5rem',
+                                      borderRadius: '12px',
+                                      whiteSpace: 'nowrap'
+                                    }}>
+                                      {item.stock > 0 ? `${item.stock}` : '0'}
+                                    </span>
+                                  </td>
 
-                                {/* Quantity Input */}
-                                <td style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>
-                                  <input
-                                    type="number"
-                                    min="1"
-                                    value={item.quantity}
-                                    onChange={e => handleUpdateManualOrderLine(item.lineId, 'quantity', parseInt(e.target.value, 10))}
-                                    style={{
-                                      width: '65px',
-                                      height: '32px',
-                                      textAlign: 'center',
-                                      borderRadius: '6px',
-                                      border: '1.5px solid #cbd5e1',
-                                      fontWeight: 800,
-                                      outline: 'none',
-                                      fontFamily: 'inherit'
-                                    }}
-                                  />
-                                </td>
-
-                                {/* Regular price */}
-                                <td style={{ padding: '0.75rem 0.75rem', textAlign: 'right', color: 'var(--text-light)', textDecoration: isDiscounted ? 'line-through' : 'none' }}>
-                                  USD ${item.regularPrice.toFixed(2)}
-                                </td>
-
-                                {/* EDITABLE PRICE (HOLDED STYLE) */}
-                                <td style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>
-                                  <div style={{ position: 'relative', display: 'inline-block' }}>
-                                    <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', fontWeight: 800, color: '#ea580c' }}>$</span>
+                                  {/* Quantity Input */}
+                                  <td style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>
                                     <input
                                       type="number"
-                                      step="0.01"
-                                      min="0"
-                                      value={item.price}
-                                      onChange={e => handleUpdateManualOrderLine(item.lineId, 'price', parseFloat(e.target.value))}
-                                      title="Modificar precio unitario para este cliente"
+                                      min="1"
+                                      value={item.quantity}
+                                      onChange={e => handleUpdateManualOrderLine(item.lineId, 'quantity', parseInt(e.target.value, 10))}
                                       style={{
-                                        width: '95px',
+                                        width: '60px',
                                         height: '32px',
-                                        padding: '0 0.4rem 0 1.2rem',
-                                        textAlign: 'right',
+                                        textAlign: 'center',
                                         borderRadius: '6px',
-                                        border: '2px solid #fdba74',
-                                        background: '#fff7ed',
+                                        border: '1.5px solid #cbd5e1',
                                         fontWeight: 800,
-                                        color: '#c2410c',
-                                        fontSize: '0.85rem',
                                         outline: 'none',
                                         fontFamily: 'inherit'
                                       }}
                                     />
-                                  </div>
-                                </td>
+                                  </td>
 
-                                {/* Line Subtotal */}
-                                <td style={{ padding: '0.75rem 0.75rem', textAlign: 'right', fontWeight: 800, color: 'var(--primary-dark)', fontSize: '0.88rem' }}>
-                                  USD ${lineTotal.toFixed(2)}
-                                </td>
+                                  {/* Regular price */}
+                                  <td style={{ padding: '0.75rem 0.75rem', textAlign: 'right', color: 'var(--text-light)', textDecoration: isDiscounted ? 'line-through' : 'none' }}>
+                                    ${item.regularPrice.toFixed(2)}
+                                  </td>
 
-                                {/* Delete button */}
-                                <td style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>
-                                  <button
-                                    type="button"
-                                    onClick={() => handleRemoveManualOrderLine(item.lineId)}
-                                    style={{
-                                      background: 'none',
-                                      border: 'none',
-                                      color: '#dc2626',
-                                      cursor: 'pointer',
-                                      padding: '0.25rem',
-                                      borderRadius: '4px'
-                                    }}
-                                    title="Quitar línea"
-                                  >
-                                    <Trash2 size={16} />
-                                  </button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
+                                  {/* EDITABLE PRICE (HOLDED STYLE) */}
+                                  <td style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>
+                                    <div style={{ position: 'relative', display: 'inline-block' }}>
+                                      <span style={{ position: 'absolute', left: '8px', top: '50%', transform: 'translateY(-50%)', fontSize: '0.75rem', fontWeight: 800, color: '#ea580c' }}>$</span>
+                                      <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0"
+                                        value={item.price}
+                                        onChange={e => handleUpdateManualOrderLine(item.lineId, 'price', parseFloat(e.target.value))}
+                                        title="Modificar precio unitario para este cliente"
+                                        style={{
+                                          width: '90px',
+                                          height: '32px',
+                                          padding: '0 0.4rem 0 1.2rem',
+                                          textAlign: 'right',
+                                          borderRadius: '6px',
+                                          border: '2px solid #fdba74',
+                                          background: '#fff7ed',
+                                          fontWeight: 800,
+                                          color: '#c2410c',
+                                          fontSize: '0.85rem',
+                                          outline: 'none',
+                                          fontFamily: 'inherit'
+                                        }}
+                                      />
+                                    </div>
+                                  </td>
+
+                                  {/* Line Subtotal */}
+                                  <td style={{ padding: '0.75rem 0.75rem', textAlign: 'right', fontWeight: 800, color: 'var(--primary-dark)', fontSize: '0.88rem' }}>
+                                    USD ${lineTotal.toFixed(2)}
+                                  </td>
+
+                                  {/* Delete button */}
+                                  <td style={{ padding: '0.75rem 0.75rem', textAlign: 'center' }}>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveManualOrderLine(item.lineId)}
+                                      style={{
+                                        background: 'none',
+                                        border: 'none',
+                                        color: '#dc2626',
+                                        cursor: 'pointer',
+                                        padding: '0.25rem',
+                                        borderRadius: '4px'
+                                      }}
+                                      title="Quitar línea"
+                                    >
+                                      <Trash2 size={15} />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {/* Step 1 Footer: Subtotal & Next Step Button */}
+                      <div style={{
+                        padding: '1.25rem',
+                        background: '#f8fafc',
+                        borderTop: '1px solid #e2e8f0',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '1rem'
+                      }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span style={{ fontSize: '0.85rem', color: 'var(--text-medium)', fontWeight: 600 }}>
+                            Total de Insumos: <strong>{moTotalUnits} unidades</strong>
+                          </span>
+                          <span style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
+                            Subtotal: <strong style={{ color: '#2563eb' }}>USD ${moSubtotalUSD.toFixed(2)}</strong>
+                          </span>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={moItems.length === 0}
+                          onClick={() => {
+                            setMoError('');
+                            setMoStep(2);
+                            window.scrollTo({ top: 120, behavior: 'smooth' });
+                          }}
+                          style={{
+                            background: moItems.length > 0 ? 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' : '#cbd5e1',
+                            color: '#ffffff',
+                            border: 'none',
+                            borderRadius: '8px',
+                            padding: '0.85rem 1.5rem',
+                            fontWeight: 800,
+                            fontSize: '0.92rem',
+                            cursor: moItems.length > 0 ? 'pointer' : 'not-allowed',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: '0.5rem',
+                            boxShadow: moItems.length > 0 ? '0 4px 14px rgba(37, 99, 235, 0.25)' : 'none',
+                            transition: 'all 0.2s ease',
+                            fontFamily: 'inherit'
+                          }}
+                        >
+                          <span>Siguiente: Datos del Cliente & Cierre ({moTotalUnits} u.)</span>
+                          <ArrowRight size={18} />
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>
 
               </div>
+            )}
 
-              {/* RIGHT COLUMN: Customer Information + Order Summary */}
-              <form onSubmit={handleProcessManualOrder} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* ============================================================== */}
+            {/* STEP 2: CUSTOMER DETAILS & FINANCIAL CHECKOUT */}
+            {/* ============================================================== */}
+            {moStep === 2 && (
+              <form onSubmit={handleProcessManualOrder} style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
+                gap: '1.5rem',
+                alignItems: 'start'
+              }}>
                 
-                {/* Customer Details Box */}
+                {/* LEFT: 3. Datos del Médico / Clínica */}
                 <div style={{
                   background: '#ffffff',
                   border: '1px solid var(--border-light)',
                   borderRadius: '12px',
-                  padding: '1.25rem',
+                  padding: '1.5rem',
                   boxShadow: 'var(--shadow-sm)'
                 }}>
-                  <h3 style={{ margin: '0 0 1rem 0', fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-dark)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <h3 style={{ margin: '0 0 1.25rem 0', fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-dark)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <User size={16} color="#2563eb" /> 3. Datos del Médico / Clínica
                   </h3>
 
@@ -4254,20 +4438,65 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   </div>
                 </div>
 
-                {/* Financial Summary & Process Button */}
+                {/* RIGHT: 4. Resumen y Cierre de Venta */}
                 <div style={{
                   background: '#ffffff',
                   border: '1.5px solid #bfdbfe',
                   borderRadius: '12px',
-                  padding: '1.25rem',
+                  padding: '1.5rem',
                   boxShadow: 'var(--shadow-sm)',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.85rem'
+                  gap: '1rem'
                 }}>
-                  <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
-                    4. Resumen y Cierre de Venta
-                  </h3>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 800, color: 'var(--primary-dark)' }}>
+                      4. Resumen y Cierre de Venta
+                    </h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMoStep(1);
+                        window.scrollTo({ top: 120, behavior: 'smooth' });
+                      }}
+                      style={{
+                        background: '#f1f5f9',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '6px',
+                        padding: '0.3rem 0.65rem',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        color: '#2563eb',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      <ArrowLeft size={13} /> Editar Insumos ({moItems.length})
+                    </button>
+                  </div>
+
+                  {/* Compact list recap */}
+                  <div style={{
+                    maxHeight: '140px',
+                    overflowY: 'auto',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    padding: '0.5rem 0.75rem',
+                    background: '#f8fafc',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.35rem'
+                  }}>
+                    {moItems.map(item => (
+                      <div key={item.lineId} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.76rem', color: '#1e293b' }}>
+                        <span><strong>{item.quantity}x</strong> {item.productName} {item.variantName ? `(${item.variantName})` : ''}</span>
+                        <span style={{ fontWeight: 700 }}>USD ${(item.price * item.quantity).toFixed(2)}</span>
+                      </div>
+                    ))}
+                  </div>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: 'var(--text-medium)' }}>
                     <span>Cajas / Unidades Totales:</span>
@@ -4316,9 +4545,14 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                     <span style={{ fontWeight: 800, fontSize: '1rem', color: 'var(--primary-dark)' }}>
                       TOTAL A FACTURAR:
                     </span>
-                    <span style={{ fontWeight: 800, fontSize: '1.35rem', color: '#2563eb' }}>
-                      USD ${moTotalUSD.toFixed(2)}
-                    </span>
+                    <div style={{ textAlign: 'right' }}>
+                      <div style={{ fontWeight: 900, fontSize: '1.4rem', color: '#2563eb' }}>
+                        USD ${moTotalUSD.toFixed(2)}
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: '#64748b', fontWeight: 600 }}>
+                        ≈ ${(Math.round(moTotalUSD * (Number(settings?.exchangeRate) || 1380))).toLocaleString('es-AR')} ARS
+                      </div>
+                    </div>
                   </div>
 
                   {/* Stock decrement toggle */}
@@ -4344,35 +4578,61 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
                   </label>
 
                   {/* Process / Save button */}
-                  <button
-                    type="submit"
-                    disabled={moItems.length === 0}
-                    style={{
-                      background: moItems.length > 0 ? (moEditingOrderId ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)') : '#94a3b8',
-                      color: '#ffffff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '0.85rem 1.5rem',
-                      fontWeight: 800,
-                      fontSize: '0.92rem',
-                      cursor: moItems.length > 0 ? 'pointer' : 'not-allowed',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem',
-                      boxShadow: moItems.length > 0 ? '0 4px 14px rgba(37, 99, 235, 0.3)' : 'none',
-                      transition: 'all 0.2s ease',
-                      fontFamily: 'inherit',
-                      marginTop: '0.5rem'
-                    }}
-                  >
-                    {moEditingOrderId ? <Save size={18} /> : <Receipt size={18} />}
-                    {moEditingOrderId ? `Guardar Cambios de la Orden #${moEditingOrderId}` : `Procesar y Guardar Pedido (${moTotalUnits})`}
-                  </button>
+                  <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setMoStep(1);
+                        window.scrollTo({ top: 120, behavior: 'smooth' });
+                      }}
+                      style={{
+                        background: '#f1f5f9',
+                        color: '#475569',
+                        border: '1px solid #cbd5e1',
+                        borderRadius: '8px',
+                        padding: '0.85rem 1.1rem',
+                        fontWeight: 700,
+                        fontSize: '0.85rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.35rem',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      <ArrowLeft size={16} /> Volver
+                    </button>
+
+                    <button
+                      type="submit"
+                      disabled={moItems.length === 0}
+                      style={{
+                        flex: 1,
+                        background: moItems.length > 0 ? (moEditingOrderId ? 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)' : 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)') : '#94a3b8',
+                        color: '#ffffff',
+                        border: 'none',
+                        borderRadius: '8px',
+                        padding: '0.85rem 1.5rem',
+                        fontWeight: 800,
+                        fontSize: '0.92rem',
+                        cursor: moItems.length > 0 ? 'pointer' : 'not-allowed',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem',
+                        boxShadow: moItems.length > 0 ? '0 4px 14px rgba(37, 99, 235, 0.3)' : 'none',
+                        transition: 'all 0.2s ease',
+                        fontFamily: 'inherit'
+                      }}
+                    >
+                      {moEditingOrderId ? <Save size={18} /> : <Receipt size={18} />}
+                      {moEditingOrderId ? `Guardar Cambios de Orden #${moEditingOrderId}` : `Procesar y Guardar Pedido (USD $${moTotalUSD.toFixed(2)})`}
+                    </button>
+                  </div>
                 </div>
 
               </form>
-            </div>
+            )}
 
           </div>
         )}
