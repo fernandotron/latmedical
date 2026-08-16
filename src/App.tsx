@@ -557,7 +557,7 @@ const App: React.FC = () => {
               /* Standard Tabs */
               <>
                 {activeTab === 'hilos-pdo' && (
-                  <div style={{ animation: 'fadeIn 0.5s ease', paddingTop: 'var(--header-height)' }}>
+                  <div style={{ animation: 'fadeIn 0.5s ease' }}>
                     <HilosPDOPage
                       onContact={() => handleSetActiveTab('contact')}
                       onBack={() => handleSetActiveTab('products')}
