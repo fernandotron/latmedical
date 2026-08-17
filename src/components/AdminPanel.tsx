@@ -805,58 +805,37 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
   };
 
   const handlePrintOrderInvoice = (order: Order) => {
-    const existingIframe = document.getElementById('latmedical-order-print-frame');
-    if (existingIframe) existingIframe.remove();
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) return;
 
-    const iframe = document.createElement('iframe');
-    iframe.id = 'latmedical-order-print-frame';
-    iframe.style.position = 'fixed';
-    iframe.style.right = '0';
-    iframe.style.bottom = '0';
-    iframe.style.width = '0';
-    iframe.style.height = '0';
-    iframe.style.border = '0';
-    iframe.style.visibility = 'hidden';
-    document.body.appendChild(iframe);
+    const itemsRows = order.items.map(item => `
+      <tr>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b;">
+          ${item.productName}
+          ${item.variantName ? `<span style="color: #64748b; font-size: 12px; margin-left: 4px;">(${item.variantName})</span>` : ''}
+          ${item.batchNumber ? `<div style="font-size: 11px; color: #ea580c; font-weight: 600; margin-top: 2px;">Lote: ${item.batchNumber} • Vence: ${item.expiryDate || 'N/A'}</div>` : ''}
+        </td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: center; color: #1e293b;">${item.quantity}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #475569;">USD $${item.price.toFixed(2)}</td>
+        <td style="padding: 10px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: #0f172a;">USD $${(item.price * item.quantity).toFixed(2)}</td>
+      </tr>
+    `).join('');
 
-    const logoFullUrl = window.location.origin + '/logo-full.png';
+    const formattedDelivery = order.address 
+      ? `${order.address}, ${order.city || 'CABA'} (${order.province || 'Buenos Aires'})`
+      : `Despacho a convenir, ${order.city || 'CABA'} (${order.province || 'Buenos Aires'})`;
 
-    const itemsRows = order.items.map((item, idx) => {
-      const lineTotal = item.price * item.quantity;
-      return `
-        <tr style="border-bottom: 1px solid #e2e8f0; background: ${idx % 2 === 0 ? '#ffffff' : '#f8fafc'};">
-          <td style="padding: 9px 12px; font-weight: 600; color: #0f172a;">
-            ${item.productName}
-            ${item.variantName ? `<span style="color: #0369a1; font-weight: 600; font-size: 11px; margin-left: 6px;">(${item.variantName})</span>` : ''}
-            ${item.batchNumber ? `<div style="font-size: 10px; color: #ea580c; font-weight: 700;">Lote: ${item.batchNumber} • Vence: ${item.expiryDate || 'N/A'}</div>` : ''}
-          </td>
-          <td style="padding: 9px 12px; text-align: center; font-weight: 800; color: #0f172a;">${item.quantity}</td>
-          <td style="padding: 9px 12px; text-align: right; color: #475569;">USD $${item.price.toFixed(2)}</td>
-          <td style="padding: 9px 12px; text-align: right; font-weight: 800; color: #0f172a;">USD $${lineTotal.toFixed(2)}</td>
-        </tr>
-      `;
-    }).join('');
-
-    const currentRate = (settings && settings.exchangeRate) ? Number(settings.exchangeRate) : 1380;
-    const totalARS = Math.round(order.total * currentRate);
-
-    const iframeDoc = iframe.contentWindow?.document;
-    if (!iframeDoc) return;
-
-    iframeDoc.open();
-    iframeDoc.write(`
+    printWindow.document.open();
+    printWindow.document.write(`
       <!DOCTYPE html>
       <html lang="es">
         <head>
           <meta charset="UTF-8">
-          <title>Comprobante_Pedido_${order.id}</title>
-          <link rel="preconnect" href="https://fonts.googleapis.com">
-          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
+          <title>Nota de Venta / Proforma - ${order.id}</title>
           <style>
             @page {
               size: A4 portrait;
-              margin: 12mm 12mm 14mm 12mm;
+              margin: 15mm;
             }
             * {
               box-sizing: border-box;
@@ -864,136 +843,114 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
               print-color-adjust: exact !important;
             }
             body {
-              font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+              font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+              margin: 40px;
               color: #1e293b;
-              margin: 0;
-              padding: 0;
-              font-size: 9pt;
-              line-height: 1.4;
+              font-size: 13px;
+              line-height: 1.5;
             }
             .header {
               display: flex;
               justify-content: space-between;
-              align-items: flex-start;
               border-bottom: 2px solid #0f172a;
-              padding-bottom: 14px;
-              margin-bottom: 16px;
+              padding-bottom: 20px;
+              margin-bottom: 25px;
             }
-            .badge-order {
-              display: inline-block;
-              background: #0f172a;
-              color: #ffffff;
-              padding: 4px 10px;
-              border-radius: 4px;
-              font-size: 8pt;
+            .logo {
+              font-size: 24px;
               font-weight: 800;
-              text-transform: uppercase;
-              letter-spacing: 0.05em;
+              color: #0f172a;
+              letter-spacing: -0.5px;
             }
-            .badge-status {
+            .badge {
+              background: #dbeafe;
+              color: #1e40af;
+              padding: 4px 12px;
+              border-radius: 20px;
+              font-size: 12px;
+              font-weight: bold;
               display: inline-block;
-              padding: 3px 8px;
-              border-radius: 4px;
-              font-size: 8pt;
-              font-weight: 700;
-              background: #dcfce7;
-              color: #15803d;
-              margin-top: 4px;
             }
-            .grid-meta {
+            .meta {
               display: grid;
-              grid-template-columns: 1.2fr 1fr;
-              gap: 12px;
-              margin-bottom: 16px;
+              grid-template-columns: 1fr 1fr;
+              gap: 20px;
+              margin-bottom: 25px;
             }
-            .meta-card {
+            .box {
               background: #f8fafc;
               border: 1px solid #e2e8f0;
-              border-radius: 6px;
-              padding: 10px 12px;
-              font-size: 8.5pt;
+              border-radius: 8px;
+              padding: 15px;
+              font-size: 13px;
+              line-height: 1.6;
             }
             table {
               width: 100%;
               border-collapse: collapse;
-              margin-bottom: 16px;
-              font-size: 8.5pt;
-              page-break-inside: auto;
-            }
-            thead {
-              display: table-header-group;
-            }
-            tbody {
-              display: table-row-group;
-            }
-            tr {
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
+              margin-bottom: 25px;
+              font-size: 14px;
             }
             th {
-              background: #0f172a;
-              color: #ffffff;
-              padding: 7px 12px;
-              font-weight: 700;
-              font-size: 8pt;
-              text-transform: uppercase;
-              letter-spacing: 0.03em;
+              background: #ffffff;
+              color: #64748b;
+              padding: 10px;
+              text-align: left;
+              font-size: 13px;
+              font-weight: 600;
+              border-bottom: 1px solid #e2e8f0;
             }
-            .totals-box {
-              background: #f8fafc;
-              border: 1.5px solid #0f172a;
-              border-radius: 6px;
-              padding: 12px 16px;
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-              margin-bottom: 16px;
+            .total-box {
+              text-align: right;
+              font-size: 18px;
+              font-weight: bold;
+              padding: 15px;
+              background: #ffffff;
+              border-radius: 8px;
+              color: #0f172a;
             }
-            .avoid-break {
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
+            @media print {
+              body {
+                margin: 0;
+              }
             }
           </style>
         </head>
         <body>
-          <div class="header avoid-break">
+          <div class="header">
             <div>
-              <img src="${logoFullUrl}" alt="Latmedical International" style="height: 42px; margin-bottom: 4px; display: block;" />
-              <div style="font-size: 8pt; color: #64748b; font-weight: 600;">Latmedical International S.A. • CUIT: 30-71689241-9</div>
-              <div style="font-size: 7.5pt; color: #94a3b8;">Distribución Oficial V-Lift Pro & Seffiline • Registro ANMAT PM 1234-56</div>
+              <div class="logo">LATMEDICAL</div>
+              <div style="font-size: 12px; color: #64748b; margin-top: 3px;">Dispositivos Médicos & Estética Avanzada</div>
             </div>
             <div style="text-align: right;">
-              <span class="badge-order">Orden de Venta B2B</span>
-              <div style="font-size: 14pt; font-weight: 800; color: #0f172a; margin-top: 3px;">#${order.id}</div>
-              <div style="font-size: 7.5pt; color: #64748b;">Fecha: ${order.date}</div>
-              <span class="badge-status">Estado: ${order.status}</span>
+              <span class="badge">ORDEN DE VENTA #${order.id}</span>
+              <div style="font-size: 12px; color: #64748b; margin-top: 5px;">Fecha: ${order.date}</div>
             </div>
           </div>
 
-          <div class="grid-meta avoid-break">
-            <div class="meta-card">
-              <strong style="color: #0f172a; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">Datos del Comprador / Clínica:</strong>
-              <div style="font-size: 10pt; font-weight: 800; color: #0f172a;">${order.fullName}</div>
-              <div style="color: #475569; font-weight: 600;">${order.specialty || 'Profesional Médico'} ${order.licenseNumber ? `• M.N. / M.P.: ${order.licenseNumber}` : ''}</div>
-              <div style="color: #64748b; margin-top: 3px;">Tel / WhatsApp: <strong>${order.phone}</strong></div>
-              ${order.email ? `<div style="color: #64748b;">Email: ${order.email}</div>` : ''}
+          <div class="meta">
+            <div class="box">
+              <strong style="color: #0f172a; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">CLIENTE / PROFESIONAL:</strong><br/>
+              <strong style="font-size: 15px; color: #0f172a;">${order.fullName}</strong><br/>
+              ${order.specialty || 'Profesional Médico'} ${order.licenseNumber ? `• Mat: ${order.licenseNumber}` : ''}<br/>
+              Tel / WhatsApp: ${order.phone}<br/>
+              ${order.email ? `Email: ${order.email}` : ''}
             </div>
-            <div class="meta-card">
-              <strong style="color: #0f172a; text-transform: uppercase; font-size: 7.5pt; letter-spacing: 0.05em; display: block; margin-bottom: 4px;">Condiciones de Despacho & Pago:</strong>
-              <div>Método de Pago: <strong style="color: #0369a1;">${order.paymentMethod}</strong></div>
-              <div style="margin-top: 3px;">Destino: <strong>${order.address || 'Despacho a convenir'}</strong></div>
-              <div>Localidad: <strong>${order.city || 'CABA'}, ${order.province || 'Buenos Aires'}</strong></div>
-              <div style="color: #059669; font-weight: 600; font-size: 7.5pt; margin-top: 3px;">Cadena de Esterilidad y Trazabilidad Garantizada</div>
+            <div class="box">
+              <strong style="color: #0f172a; text-transform: uppercase; font-size: 11px; letter-spacing: 0.5px;">CONDICIONES COMERCIALES:</strong><br/>
+              Método de Pago: <strong>${order.paymentMethod}</strong><br/>
+              Estado: <strong>${order.status}</strong><br/>
+              Entrega: ${formattedDelivery}
             </div>
           </div>
 
           <table>
             <thead>
               <tr>
-                <th style="text-align: left;">Insumo / Dispositivo Médico</th>
-                <th style="text-align: center; width: 70px;">Cant.</th>
-                <th style="text-align: right; width: 110px;">Precio Unit.</th>
-                <th style="text-align: right; width: 120px;">Total (USD)</th>
+                <th>Producto / Insumo</th>
+                <th style="text-align: center; width: 90px;">Cantidad</th>
+                <th style="text-align: right; width: 120px;">Precio Unitario</th>
+                <th style="text-align: right; width: 120px;">Total Línea</th>
               </tr>
             </thead>
             <tbody>
@@ -1001,45 +958,24 @@ export const AdminPanel: React.FC<AdminPanelProps> = ({ isAdminLoggedIn, onAdmin
             </tbody>
           </table>
 
-          <div class="totals-box avoid-break">
-            <div>
-              <span style="font-size: 8pt; color: #64748b; display: block; font-weight: 600;">EQUIVALENTE MONEDA NACIONAL</span>
-              <span style="font-size: 11pt; font-weight: 800; color: #0369a1;">$ ${totalARS.toLocaleString('es-AR')} ARS</span>
-            </div>
-            <div style="text-align: right;">
-              <span style="font-size: 8pt; color: #64748b; display: block; font-weight: 600;">TOTAL GENERAL A FACTURAR</span>
-              <span style="font-size: 15pt; font-weight: 800; color: #0f172a;">USD $${order.total.toFixed(2)}</span>
-            </div>
+          <div class="total-box">
+            TOTAL A PAGAR: USD $${order.total.toFixed(2)}
           </div>
 
-          <div class="avoid-break" style="border-top: 1px solid #cbd5e1; padding-top: 12px; display: grid; grid-template-columns: 1.6fr 1fr; gap: 20px; align-items: flex-end;">
-            <div style="font-size: 7pt; color: #64748b; line-height: 1.4;">
-              <strong>Comprobante B2B Oficial Latmedical International S.A.</strong><br/>
-              Todos los insumos provistos cuentan con aprobación ANMAT y certificado ISO 13485. Conservar el número de lote para trazabilidad clínica del paciente.
-            </div>
-            <div style="text-align: center;">
-              <div style="border-top: 1px dashed #94a3b8; width: 85%; margin: 0 auto 4px auto;"></div>
-              <div style="font-size: 7.5pt; font-weight: 700; color: #0f172a;">Despacho & Auditoría Comercial</div>
-              <div style="font-size: 7pt; color: #64748b;">Latmedical International S.A.</div>
-            </div>
+          <div style="margin-top: 30px; border-top: 1px dashed #cbd5e1; padding-top: 15px; font-size: 11px; color: #64748b; text-align: center;">
+            Documento no válido como factura fiscal. Comprobante de venta y despacho interno Latmedical.
           </div>
+
+          <script>
+            window.onload = function() {
+              window.focus();
+              window.print();
+            };
+          </script>
         </body>
       </html>
     `);
-    iframeDoc.close();
-
-    setTimeout(() => {
-      try {
-        iframe.contentWindow?.focus();
-        iframe.contentWindow?.print();
-      } catch (e) {
-        console.error('Error printing order invoice:', e);
-      } finally {
-        setTimeout(() => {
-          if (document.body.contains(iframe)) iframe.remove();
-        }, 3000);
-      }
-    }, 300);
+    printWindow.document.close();
   };
 
   const handleValChange = (key: string, field: 'stock' | 'price', val: string) => {
